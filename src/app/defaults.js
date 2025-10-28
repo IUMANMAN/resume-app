@@ -1,4 +1,4 @@
-// 默认模块样式与排版元信息
+// Default module styles and layout metadata
 export const DEFAULT_MODULE_META = {
   personalInfo: {
     bgColor: '#f8fafc',
@@ -13,8 +13,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -32,8 +32,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -51,8 +51,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -70,8 +70,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -89,8 +89,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -108,8 +108,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -127,8 +127,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -146,8 +146,8 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
@@ -165,15 +165,15 @@ export const DEFAULT_MODULE_META = {
     h2Align: 'left',
     fontColor: '#0f172a',
     lineHeight: '1.6',
-    sectionPadding: '0.75rem',
-    moduleSpacingRem: '0.9rem',
+    sectionPadding: '0.6rem',
+    moduleSpacingRem: '1.0rem',
     iconColor: '#0ea5e9',
     showIcon: true,
     height: 0,
   },
 }
 
-// 全局样式默认值（用于各模块的初始全局配置）
+// Global style defaults (used as initial global configuration for each module)
 export const DEFAULT_GLOBAL_META = {
   titleFontSize: '1.125rem',
   titleColor: '#0f172a',
@@ -185,137 +185,134 @@ export const DEFAULT_GLOBAL_META = {
   h2FontColor: '#475569',
   h2Align: 'left',
   lineHeight: '1.6',
-  sectionPadding: '0.75rem',
-  moduleSpacingRem: '1.5rem',
+  sectionPadding: '0.6rem',
+  moduleSpacingRem: '1.2rem',
 }
 
-// 解析使用的默认 Prompt（集中管理，便于后续调整/国际化）
-export const DEFAULT_PROMPT = `请将以下简历文本解析为标准化的JSON格式。请严格按照以下JSON结构返回数据，不要添加任何其他文本或解释：
+// Default parsing prompt (centralized for future adjustment/internationalization)
+export const DEFAULT_PROMPT = `Parse the following resume text into a standardized JSON object. Strictly return data that matches the JSON schema below. Do not include any extra text or explanations.
 
 {
   "personalInfo": {
-    "name": "姓名",
-    "email": "邮箱",
-    "phone": "电话",
-    "address": "地址",
-    "linkedin": "LinkedIn链接",
-    "github": "GitHub链接",
-    "website": "个人网站"
+    "name": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "linkedin": "LinkedIn",
+    "github": "GitHub",
+    "website": "Website"
   },
-  "summary": "个人简介或职业目标",
-  "education": [
+  "summary": "Professional summary or objective",
+  "education": 
     {
-      "institution": "学校名称",
-      "degree": "学位",
-      "major": "专业",
-      "graduationDate": "毕业时间",
-      "gpa": "GPA（如有）"
-    }
-  ],
-  "experience": [
+      "institution": "Institution",
+      "degree": "Degree",
+      "major": "Major",
+      "graduationDate": "Graduation Date",
+      "gpa": "GPA (optional)"
+    },
+  "experience":
     {
-      "company": "公司名称",
-      "position": "职位",
-      "startDate": "开始时间",
-      "endDate": "结束时间",
-      "description": "工作描述",
-      "achievements": ["成就1", "成就2"]
-    }
-  ],
+      "company": "Company",
+      "position": "Position",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "description": "Role description",
+      "achievements": ["Achievement 1", "Achievement 2"]
+    },
   "skills": {
-    "technical": ["技术技能"],
-    "languages": ["语言技能"],
-    "soft": ["软技能"]
+    "technical": ["Technical Skills"],
+    "languages": ["Language Skills"],
+    "soft": ["Soft Skills"]
   },
-  "projects": [
+  "projects": 
     {
-      "name": "项目名称",
-      "description": "项目描述",
-      "technologies": ["使用技术"],
-      "link": "项目链接（如有）"
-    }
-  ],
-  "certifications": [
+      "name": "Project Name",
+      "description": "Project Description",
+      "technologies": ["Technologies"],
+      "link": "Project Link (if any)"
+    },
+  "certifications": 
     {
-      "name": "证书名称",
-      "issuer": "颁发机构",
-      "date": "获得时间"
+      "name": "Certification",
+      "issuer": "Issuer",
+      "date": "Date"
+    },
+  "awards": 
+    {
+      "name": "Award",
+      "date": "Date"
     }
-  ]
 }
 
-请只返回JSON数据，不要包含任何其他文本。`
+Return only the JSON data. Do not include any other text.`
 
-// 演示用简历文本（集中管理，避免散落在组件里）
-export const DEMO_RESUME_TEXT = `张三
-软件工程师
+// Demo resume text (centralized to avoid scattering across components)
+export const DEMO_RESUME_TEXT = `John Doe
+Software Engineer
 
-联系方式：
-电话：138-0000-0000
-邮箱：zhangsan@email.com
-地址：北京市朝阳区
+Contact:
+Phone: +1-555-000-0000
+Email: john.doe@email.com
+Address: San Francisco, CA
 
-教育背景：
-2018-2022 北京理工大学 计算机科学与技术 本科 GPA: 3.8/4.0
+Education:
+2018–2022 University of California, Berkeley — B.S. in Computer Science
+GPA: 3.8/4.0
 
-工作经验：
-2022.07-至今 阿里巴巴集团 前端开发工程师
-- 负责电商平台前端开发，使用React、Vue.js等技术栈
-- 优化页面性能，提升用户体验，页面加载速度提升30%
-- 参与微服务架构设计，协助团队完成系统重构
-- 指导2名实习生，协助其快速融入团队
+Experience:
+Jul 2022–Present Alibaba Group — Frontend Engineer
+- Built and maintained the e-commerce platform frontend using React and Vue.js
+- Optimized performance and user experience; reduced page load time by 30%
+- Contributed to microservices architecture and system refactoring
+- Mentored two interns and helped them onboard quickly
 
-2021.06-2021.09 腾讯科技 前端开发实习生
-- 参与QQ音乐Web端开发，负责播放器组件优化
-- 学习并应用TypeScript，提升代码质量和可维护性
-- 配合后端团队完成API接口对接
+Jun 2021–Sep 2021 Tencent — Frontend Intern
+- Contributed to QQ Music web client; optimized the player component
+- Learned and applied TypeScript to improve code quality and maintainability
+- Collaborated with backend teams to integrate APIs
 
-技能专长：
-编程语言：JavaScript, TypeScript, Python, Java
-前端技术：React, Vue.js, HTML5, CSS3, Sass, Webpack
-后端技术：Node.js, Express, MySQL, MongoDB
-工具平台：Git, Docker, Jenkins, AWS
+Skills:
+Programming: JavaScript, TypeScript, Python, Java
+Frontend: React, Vue.js, HTML5, CSS3, Sass, Webpack
+Backend: Node.js, Express, MySQL, MongoDB
+Tools & Platforms: Git, Docker, Jenkins, AWS
 
-项目经验：
-1. 电商管理系统 (2022-2023)
-   - 技术栈：React + TypeScript + Ant Design + Node.js
-   - 实现商品管理、订单处理、用户管理等核心功能
-   - 支持多角色权限管理，日活跃用户1000+
+Projects:
+1. E-commerce Management System (2022–2023)
+   - Stack: React + TypeScript + Ant Design + Node.js
+   - Implemented product management, order processing, and user management features
+   - Role-based access control; 1,000+ daily active users
 
-2. 个人博客系统 (2021)
-   - 技术栈：Vue.js + Express + MongoDB
-   - 实现文章发布、评论互动、标签分类等功能
-   - 响应式设计，支持移动端访问
+2. Personal Blog System (2021)
+   - Stack: Vue.js + Express + MongoDB
+   - Implemented post publishing, comments, and tag categories
+   - Responsive design with mobile support
 
-获奖荣誉：
-- 2023年 阿里巴巴集团优秀员工
-- 2022年 北京理工大学优秀毕业生
-- 2021年 全国大学生程序设计竞赛三等奖
+Awards:
+- 2023 Alibaba Group Outstanding Employee
+- 2022 Beijing Institute of Technology Excellent Graduate
+- 2021 National College Programming Contest — Third Prize
 
-语言能力：
-- 中文：母语
-- 英语：CET-6，能够流利阅读英文技术文档
+Languages:
+- Chinese: Native
+- English: CET-6; able to read technical documentation fluently
 
-自我评价：
-热爱编程，具有强烈的学习能力和团队合作精神。善于沟通，能够快速适应新环境和新技术。对前端技术有深入理解，关注用户体验和代码质量。`
+Summary:
+Passionate about programming with strong learning ability and teamwork. Excellent communication skills and quick to adapt to new environments and technologies. Deep understanding of frontend technologies, focused on user experience and code quality.`
 
-// 布局元数据默认值与统一写入 JSON 的工具函数
+// Default layout metadata and helper function to consistently write it into JSON
 export const ensureDefaultLayout = (data) => {
   const safe = data || {}
   const meta = safe.metadata || {}
   const layout = meta.layout || {}
-  const columns = layout.columns || {
-    left: ['summary', 'workExperience', 'education'],
-    right: ['skills', 'projects', 'awards', 'languages']
-  }
+  // Remove any legacy columns config; we render modules sequentially
+  const { columns, ...restLayout } = layout
   return {
     ...safe,
     metadata: {
       ...meta,
-      layout: {
-        ...layout,
-        columns
-      }
+      layout: { ...restLayout }
     }
   }
 }

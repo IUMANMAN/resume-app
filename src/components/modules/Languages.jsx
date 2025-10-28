@@ -15,14 +15,14 @@ export default function Languages({ data, meta }) {
   if (!data) return null
   const list = Array.isArray(data) ? data : [data]
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-2">
+    <section className="animate-fade-in">
+      <div className="flex items-center gap-1.5 mb-1">
         {meta?.showIcon !== false && (
           <LanguagesIcon className="h-5 w-5" style={{ color: meta?.iconColor }} />
         )}
-        <h2 className="font-semibold tracking-tight" style={{ fontSize: meta?.titleFontSize ?? meta?.h1FontSize, color: meta?.titleColor ?? meta?.fontColor, textAlign: meta?.titleAlign }}>语言</h2>
+      <h2 className="font-semibold tracking-tight" style={{ fontSize: meta?.titleFontSize ?? meta?.h1FontSize, color: meta?.titleColor ?? meta?.fontColor, textAlign: meta?.titleAlign }}>Languages</h2>
       </div>
-      <div>
+      <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
         {list.filter(Boolean).map((item, idx) => (
           <LangItem key={idx} item={item} meta={meta} />
         ))}

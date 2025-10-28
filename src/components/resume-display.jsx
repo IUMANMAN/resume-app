@@ -15,7 +15,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
 
   const source = data || {}
 
-  // 规范化个人信息结构
+  // Normalize personal info structure
   const personalInfoRaw = source.personalInfo || {}
   const personalInfo = {
     ...personalInfoRaw,
@@ -26,7 +26,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
 
   const summary = source.summary || source.objective || ''
 
-  // 模块数据优先使用标准键，必要时回退到旧键
+  // Prefer standard keys for module data; fall back to legacy keys when necessary
   const education = source.education || []
   const experience = Array.isArray(source.experience) && source.experience.length
     ? source.experience
@@ -54,7 +54,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
 
   const [isEditing, setIsEditing] = useState(!!isEditingProp)
   useEffect(() => { setIsEditing(!!isEditingProp) }, [isEditingProp])
-  // 将父级编辑状态回调放到 effect，避免在子组件渲染期间更新父组件
+  // Place parent edit-state callback inside an effect to avoid updating the parent during child render
   useEffect(() => {
     try { onEditingChange?.(isEditing) } catch {}
   }, [isEditing])
@@ -64,31 +64,31 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     const d = DEFAULT_MODULE_META?.[key] || DEFAULT_MODULE_META.summary
     return {
       bgColor: m.bgColor ?? d.bgColor,
-      // 标题（模块头）样式
+      // Title (module header) styles
       titleFontSize: m.titleFontSize ?? m.h1FontSize ?? d.titleFontSize,
       titleColor: m.titleColor ?? m.fontColor ?? d.titleColor,
       titleAlign: m.titleAlign ?? d.titleAlign,
       h1FontSize: m.h1FontSize ?? d.h1FontSize,
       h2FontSize: m.h2FontSize ?? d.h2FontSize,
-      // 文本颜色：可分别控制一级/二级
+      // Text colors: control level-1/level-2 separately
       fontColor: m.fontColor ?? d.fontColor,
       h1FontColor: m.h1FontColor ?? m.fontColor ?? d.h1FontColor,
       h2FontColor: m.h2FontColor ?? m.fontColor ?? d.h2FontColor,
-      // 对齐：标题、一级、二级
+      // Alignment: title, level-1, level-2
       h1Align: m.h1Align ?? d.h1Align,
       h2Align: m.h2Align ?? d.h2Align,
-      // 排版控制：行间距、内边距、模块间距
+      // Typography: line height, inner padding, spacing between modules
       lineHeight: m.lineHeight ?? d.lineHeight,
       sectionPadding: m.sectionPadding ?? d.sectionPadding,
       moduleSpacingRem: m.moduleSpacingRem ?? d.moduleSpacingRem,
       iconColor: m.iconColor ?? d.iconColor,
       showIcon: typeof m.showIcon === 'boolean' ? m.showIcon : d.showIcon,
-      // 不强制给出默认最小高度，遵循 defaults.js
+      // Do not force a default min-height; follow defaults.js
       heightRem: m.heightRem,
     }
   }
 
-  // 全局样式默认值（用于全局控制区的输入展示与联动）
+  // Global style defaults (for inputs shown in the global control panel and syncing)
   const [globalMeta, setGlobalMeta] = useState(() => ({
     ...DEFAULT_GLOBAL_META
   }))
@@ -105,7 +105,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     languages: { height: 0, ...moduleDefaults('languages') },
   })
 
-  // 标记是否由用户编辑触发了需要上报的更改（避免由重建或自动测量触发循环）
+  // Flag: changes triggered by user edits that should be emitted (avoid loops from rebuild/auto measurement)
   const emitPendingRef = useRef(false)
 
   const updateModuleMeta = (key, patch) => {
@@ -132,7 +132,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     setModulesMeta(meta)
   }
 
-  // 自动测量高度并实时同步到 JSON
+  // Automatically measure heights and sync to JSON in real time
   const recalcHeightsIfChanged = () => {
     const readHeight = (r) => (r?.current ? Math.round(r.current.getBoundingClientRect().height) : 0)
     const next = { ...modulesMeta }
@@ -152,7 +152,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
   }
 
   useEffect(() => {
-    // 当 data 变化（包括重置默认元数据）时，使用 JSON 中的模块元数据重建本地状态
+    // When data changes (including resetting default metadata), rebuild local state from JSON module metadata
     const rebuild = {
       personalInfo: { height: 0, heightLocked: false, ...moduleDefaults('personalInfo') },
       summary: { height: 0, heightLocked: false, ...moduleDefaults('summary') },
@@ -165,7 +165,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
       languages: { height: 0, heightLocked: false, ...moduleDefaults('languages') },
     }
     setModulesMeta(rebuild)
-    // 重建后，立即测量高度写入 JSON（不覆盖锁定值，初始均未锁定）
+    // After rebuild, measure heights immediately and write to JSON (without overwriting locked values; initially unlocked)
     recalcHeightsIfChanged()
   }, [data])
 
@@ -173,7 +173,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     recalcHeightsIfChanged()
   }, [modulesMeta.personalInfo.h1FontSize, modulesMeta.personalInfo.h2FontSize, modulesMeta.summary.h1FontSize, modulesMeta.summary.h2FontSize, modulesMeta.experience.h1FontSize, modulesMeta.experience.h2FontSize, modulesMeta.education.h1FontSize, modulesMeta.education.h2FontSize, modulesMeta.skills.h1FontSize, modulesMeta.skills.h2FontSize, modulesMeta.projects.h1FontSize, modulesMeta.projects.h2FontSize, modulesMeta.certifications.h1FontSize, modulesMeta.certifications.h2FontSize, modulesMeta.awards.h1FontSize, modulesMeta.awards.h2FontSize, modulesMeta.languages.h1FontSize, modulesMeta.languages.h2FontSize])
 
-  // 在渲染提交后统一向父组件同步“用户触发”的模块元信息更改，避免循环
+  // After render commit, sync module meta changes triggered by user to parent to avoid loops
   useEffect(() => {
     if (!onEditMeta) return
     if (emitPendingRef.current) {
@@ -184,22 +184,29 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
 
   return (
     <div
-      className={`relative mx-auto bg-white dark:bg-gray-900 shadow-lg print:shadow-none rounded-2xl border`}
-      style={{ width: isEditing ? 'calc(794px + 20rem)' : '794px' }}
+      className={`relative mx-auto bg-white dark:bg-neutral-900 shadow-none print:shadow-none rounded-xl border border-neutral-200 animate-slide-up overflow-hidden`}
+      style={{ width: '100%' }}
     >
-      <div className={`p-8 ${isEditing ? 'pr-80' : ''}`}>
-        {/* 全宽：个人信息 */}
+      <div className={`p-8 ${isEditing ? 'md:pr-80' : ''}`}>
+        {/* Fixed preview width, centered within container */}
+        <div className="mx-auto" style={{ maxWidth: '794px' }}>
+        {/* Full width: Personal Info */}
         {personalInfo && (
           <div
             ref={refs.personalInfo}
-            style={{ backgroundColor: modulesMeta.personalInfo.bgColor, minHeight: modulesMeta.personalInfo.heightRem || undefined }}
-            className="mb-8"
+            style={{
+              backgroundColor: modulesMeta.personalInfo.bgColor,
+              minHeight: modulesMeta.personalInfo.heightRem || undefined,
+              padding: modulesMeta.personalInfo.sectionPadding,
+              marginBottom: modulesMeta.personalInfo.moduleSpacingRem,
+              lineHeight: modulesMeta.personalInfo.lineHeight,
+            }}
           >
             <PersonalInfo data={personalInfo} meta={modulesMeta.personalInfo} />
           </div>
         )}
 
-        {/* 全宽：个人简介（若存在） */}
+        {/* Full width: Summary (if present) */}
         {summary && (
           <section
             ref={refs.summary}
@@ -214,7 +221,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
             <h2
               className="font-semibold tracking-tight mb-2"
               style={{ fontSize: modulesMeta.summary.titleFontSize, color: modulesMeta.summary.titleColor, textAlign: modulesMeta.summary.titleAlign }}
-            >个人简介</h2>
+            >Summary</h2>
             <p
               className="text-gray-700 dark:text-gray-300 leading-7 max-w-[70ch]"
               style={{ color: modulesMeta.summary.h2FontColor, textAlign: modulesMeta.summary.h2Align }}
@@ -222,7 +229,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </section>
         )}
 
-        {/* 全宽：工作经历 */}
+        {/* Full width: Experience */}
         {experience && (Array.isArray(experience) ? experience.length > 0 : !!experience) && (
           <div
             ref={refs.experience}
@@ -238,7 +245,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：教育经历 */}
+        {/* Full width: Education */}
         {education && (Array.isArray(education) ? education.length > 0 : !!education) && (
           <div
             ref={refs.education}
@@ -254,7 +261,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：技能 */}
+        {/* Full width: Skills */}
         {skills && Object.keys(skills).length > 0 && (
           <div
             ref={refs.skills}
@@ -270,7 +277,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：项目 */}
+        {/* Full width: Projects */}
         {projects && (Array.isArray(projects) ? projects.length > 0 : !!projects) && (
           <div
             ref={refs.projects}
@@ -286,7 +293,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：证书 */}
+        {/* Full width: Certifications */}
         {certifications && (Array.isArray(certifications) ? certifications.length > 0 : !!certifications) && (
           <div
             ref={refs.certifications}
@@ -302,7 +309,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：奖项 */}
+        {/* Full width: Awards */}
         {awards && (Array.isArray(awards) ? awards.length > 0 : !!awards) && (
           <div
             ref={refs.awards}
@@ -318,7 +325,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
           </div>
         )}
 
-        {/* 全宽：语言能力 */}
+        {/* Full width: Languages */}
         {languages && (Array.isArray(languages) ? languages.length > 0 : !!languages) && (
           <div
             ref={refs.languages}
@@ -333,12 +340,13 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
             <LanguagesModule data={languages} meta={modulesMeta.languages} />
           </div>
         )}
+        </div>
       </div>
 
       {isEditing && (
         <div className="absolute top-0 right-0 w-80 h-full border-l bg-white dark:bg-gray-800 p-4 overflow-y-auto">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium">模块样式编辑</div>
+            <div className="text-sm font-medium">Module Style Editor</div>
             <Button
               variant="outline"
               size="sm"
@@ -346,7 +354,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 setIsEditing(false)
               }}
             >
-              关闭
+              Close
             </Button>
           </div>
           <div className="mb-3">
@@ -354,22 +362,22 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               variant="secondary"
               size="sm"
               onClick={() => {
-                // 触发父级恢复模块样式（不影响布局列）
+                // Trigger parent to reset module styles (layout columns unaffected)
                 try { onResetStyles?.() } catch {}
               }}
               className="w-full"
             >
-              恢复默认样式
+              Restore Default Styles
             </Button>
           </div>
 
-          {/* 全局样式设置：作用于所有模块 */}
+          {/* Global style settings: apply to all modules */}
           <div className="mb-4 border rounded p-3">
-            <div className="text-xs font-semibold mb-2">全局样式</div>
+            <div className="text-xs font-semibold mb-2">Global Styles</div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">标题字号</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="例如 1.25rem" value={globalMeta.titleFontSize}
+              <label className="text-xs w-24">Title Font Size</label>
+              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1.25rem" value={globalMeta.titleFontSize}
                 onChange={(e) => {
                   const v = e.target.value
                   emitPendingRef.current = true
@@ -382,7 +390,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">标题颜色</label>
+              <label className="text-xs w-24">Title Color</label>
               <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.titleColor}
                 onChange={(e) => {
                   const v = e.target.value
@@ -396,7 +404,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">标题对齐</label>
+              <label className="text-xs w-24">Title Alignment</label>
               <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.titleAlign}
                 onChange={(e) => {
                   const v = e.target.value
@@ -408,13 +416,13 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                     return next
                   })
                 }}>
-                <option value="left">居左</option>
-                <option value="center">居中</option>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">一级字号</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="例如 1.25rem" value={globalMeta.h1FontSize}
+              <label className="text-xs w-24">Primary Font Size</label>
+              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1.25rem" value={globalMeta.h1FontSize}
                 onChange={(e) => {
                   const v = e.target.value
                   emitPendingRef.current = true
@@ -427,7 +435,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">一级颜色</label>
+              <label className="text-xs w-24">Primary Color</label>
               <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.h1FontColor}
                 onChange={(e) => {
                   const v = e.target.value
@@ -441,7 +449,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">一级对齐</label>
+              <label className="text-xs w-24">Primary Alignment</label>
               <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.h1Align}
                 onChange={(e) => {
                   const v = e.target.value
@@ -453,13 +461,13 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                     return next
                   })
                 }}>
-                <option value="left">居左</option>
-                <option value="center">居中</option>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">二级字号</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="例如 1rem" value={globalMeta.h2FontSize}
+              <label className="text-xs w-24">Secondary Font Size</label>
+              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1rem" value={globalMeta.h2FontSize}
                 onChange={(e) => {
                   const v = e.target.value
                   emitPendingRef.current = true
@@ -472,7 +480,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">二级颜色</label>
+              <label className="text-xs w-24">Secondary Color</label>
               <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.h2FontColor}
                 onChange={(e) => {
                   const v = e.target.value
@@ -486,7 +494,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                 }} />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs w-24">二级对齐</label>
+              <label className="text-xs w-24">Secondary Alignment</label>
               <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.h2Align}
                 onChange={(e) => {
                   const v = e.target.value
@@ -498,13 +506,13 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                     return next
                   })
                 }}>
-                <option value="left">居左</option>
-                <option value="center">居中</option>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
               </select>
             </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs w-24">行间距</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="例如 1.6" value={globalMeta.lineHeight}
+                <label className="text-xs w-24">Line Height</label>
+                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 1.6" value={globalMeta.lineHeight}
                   onChange={(e) => {
                     const v = e.target.value
                     emitPendingRef.current = true
@@ -517,8 +525,8 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                   }} />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs w-24">模块内边距</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="例如 1rem" value={globalMeta.sectionPadding}
+                <label className="text-xs w-24">Section Padding</label>
+                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 1rem" value={globalMeta.sectionPadding}
                   onChange={(e) => {
                     const v = e.target.value
                     emitPendingRef.current = true
@@ -531,8 +539,8 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
                   }} />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs w-24">模块间距</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="例如 2rem" value={globalMeta.moduleSpacingRem}
+                <label className="text-xs w-24">Module Spacing</label>
+                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 2rem" value={globalMeta.moduleSpacingRem}
                   onChange={(e) => {
                     const v = e.target.value
                     emitPendingRef.current = true
@@ -552,81 +560,81 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               <div className="text-xs font-semibold mb-2">{key}</div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">背景色</label>
+                  <label className="text-xs w-20">Background</label>
                   <input type="color" value={meta.bgColor} onChange={(e) => updateModuleMeta(key, { bgColor: e.target.value })} className="h-7 w-12 p-0 border" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">标题颜色</label>
+                  <label className="text-xs w-20">Title Color</label>
                   <input type="color" value={meta.titleColor} onChange={(e) => updateModuleMeta(key, { titleColor: e.target.value })} className="h-7 w-12 p-0 border" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">图标色</label>
+                  <label className="text-xs w-20">Icon Color</label>
                   <input type="color" value={meta.iconColor} onChange={(e) => updateModuleMeta(key, { iconColor: e.target.value })} className="h-7 w-12 p-0 border" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">显示图标</label>
+                  <label className="text-xs w-20">Show Icon</label>
                   <input type="checkbox" checked={!!meta.showIcon} onChange={(e) => updateModuleMeta(key, { showIcon: e.target.checked })} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">标题字号</label>
-                  <input type="text" value={meta.titleFontSize} onChange={(e) => updateModuleMeta(key, { titleFontSize: e.target.value })} placeholder="例如 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Title Font Size</label>
+                  <input type="text" value={meta.titleFontSize} onChange={(e) => updateModuleMeta(key, { titleFontSize: e.target.value })} placeholder="e.g. 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">标题对齐</label>
+                  <label className="text-xs w-20">Title Alignment</label>
                   <select value={meta.titleAlign} onChange={(e) => updateModuleMeta(key, { titleAlign: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">居左</option>
-                    <option value="center">居中</option>
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">一级字号</label>
-                  <input type="text" value={meta.h1FontSize} onChange={(e) => updateModuleMeta(key, { h1FontSize: e.target.value })} placeholder="例如 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Primary Font Size</label>
+                  <input type="text" value={meta.h1FontSize} onChange={(e) => updateModuleMeta(key, { h1FontSize: e.target.value })} placeholder="e.g. 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">一级颜色</label>
+                  <label className="text-xs w-20">Primary Color</label>
                   <input type="color" value={meta.h1FontColor} onChange={(e) => updateModuleMeta(key, { h1FontColor: e.target.value })} className="h-7 w-12 p-0 border" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">一级对齐</label>
+                  <label className="text-xs w-20">Primary Alignment</label>
                   <select value={meta.h1Align} onChange={(e) => updateModuleMeta(key, { h1Align: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">居左</option>
-                    <option value="center">居中</option>
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">二级字号</label>
-                  <input type="text" value={meta.h2FontSize} onChange={(e) => updateModuleMeta(key, { h2FontSize: e.target.value })} placeholder="例如 1rem" className="flex-1 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Secondary Font Size</label>
+                  <input type="text" value={meta.h2FontSize} onChange={(e) => updateModuleMeta(key, { h2FontSize: e.target.value })} placeholder="e.g. 1rem" className="flex-1 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">二级颜色</label>
+                  <label className="text-xs w-20">Secondary Color</label>
                   <input type="color" value={meta.h2FontColor} onChange={(e) => updateModuleMeta(key, { h2FontColor: e.target.value })} className="h-7 w-12 p-0 border" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">二级对齐</label>
+                  <label className="text-xs w-20">Secondary Alignment</label>
                   <select value={meta.h2Align} onChange={(e) => updateModuleMeta(key, { h2Align: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">居左</option>
-                    <option value="center">居中</option>
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">行间距</label>
-                  <input type="text" value={meta.lineHeight} onChange={(e) => updateModuleMeta(key, { lineHeight: e.target.value })} placeholder="例如 1.6" className="w-28 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Line Height</label>
+                  <input type="text" value={meta.lineHeight} onChange={(e) => updateModuleMeta(key, { lineHeight: e.target.value })} placeholder="e.g. 1.6" className="w-28 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">模块内边距</label>
-                  <input type="text" value={meta.sectionPadding} onChange={(e) => updateModuleMeta(key, { sectionPadding: e.target.value })} placeholder="例如 1rem" className="w-28 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Section Padding</label>
+                  <input type="text" value={meta.sectionPadding} onChange={(e) => updateModuleMeta(key, { sectionPadding: e.target.value })} placeholder="e.g. 1rem" className="w-28 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">模块间距</label>
-                  <input type="text" value={meta.moduleSpacingRem} onChange={(e) => updateModuleMeta(key, { moduleSpacingRem: e.target.value })} placeholder="例如 2rem" className="w-28 text-xs border rounded px-2 py-1" />
+                  <label className="text-xs w-20">Module Spacing</label>
+                  <input type="text" value={meta.moduleSpacingRem} onChange={(e) => updateModuleMeta(key, { moduleSpacingRem: e.target.value })} placeholder="e.g. 2rem" className="w-28 text-xs border rounded px-2 py-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">最小高度(rem)</label>
+                  <label className="text-xs w-20">Min Height (rem)</label>
                   <input
                     type="text"
                     value={meta.heightRem || ''}
                     onChange={(e) => updateModuleMeta(key, { heightRem: e.target.value, heightLocked: true })}
-                    placeholder="例如 12rem"
+                    placeholder="e.g. 12rem"
                     className="w-28 text-xs border rounded px-2 py-1"
                   />
                 </div>

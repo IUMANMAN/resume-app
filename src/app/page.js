@@ -17,67 +17,13 @@ import { ResumeDisplay } from '@/components/resume-display'
 import { JsonViewer } from '@/components/json-viewer'
 import { ConfigPanel } from '@/components/modules/ConfigPanel'
 import { InputPanel } from '@/components/modules/InputPanel'
-import { DEFAULT_MODULE_META, DEFAULT_GLOBAL_META, ensureDefaultLayout } from '@/app/defaults'
+import { DEFAULT_MODULE_META, DEFAULT_GLOBAL_META, ensureDefaultLayout, DEFAULT_PROMPT, DEMO_RESUME_TEXT } from '@/app/defaults'
 import { ResumeWorkspace } from '@/components/home/ResumeWorkspace'
 import { Header } from '@/components/home/Header'
+import { Footer } from '@/components/home/Footer'
 import { ErrorAlert } from '@/components/home/ErrorAlert'
 
-// 接口中使用的解析 Prompt（供在无 API 时参考与改写）
-const DEFAULT_PROMPT = `请将以下简历文本解析为标准化的JSON格式。请严格按照以下JSON结构返回数据，不要添加任何其他文本或解释：
-
-{
-  "personalInfo": {
-    "name": "姓名",
-    "email": "邮箱",
-    "phone": "电话",
-    "address": "地址",
-    "linkedin": "LinkedIn链接",
-    "github": "GitHub链接",
-    "website": "个人网站"
-  },
-  "summary": "个人简介或职业目标",
-  "education": [
-    {
-      "institution": "学校名称",
-      "degree": "学位",
-      "major": "专业",
-      "graduationDate": "毕业时间",
-      "gpa": "GPA（如有）"
-    }
-  ],
-  "experience": [
-    {
-      "company": "公司名称",
-      "position": "职位",
-      "startDate": "开始时间",
-      "endDate": "结束时间",
-      "description": "工作描述",
-      "achievements": ["成就1", "成就2"]
-    }
-  ],
-  "skills": {
-    "technical": ["技术技能"],
-    "languages": ["语言技能"],
-    "soft": ["软技能"]
-  },
-  "projects": [
-    {
-      "name": "项目名称",
-      "description": "项目描述",
-      "technologies": ["使用技术"],
-      "link": "项目链接（如有）"
-    }
-  ],
-  "certifications": [
-    {
-      "name": "证书名称",
-      "issuer": "颁发机构",
-      "date": "获得时间"
-    }
-  ]
-}
-
-请只返回JSON数据，不要包含任何其他文本。`
+// Use unified default prompt imported from defaults.js
 
 export default function Home() {
   const [resumeText, setResumeText] = useState('')
@@ -90,11 +36,11 @@ export default function Home() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [resumeData, setResumeData] = useState(null)
   const [jsonText, setJsonText] = useState('')
-  const [autoSyncJson, setAutoSyncJson] = useState(true)
+  // Always realtime sync JSON edits to preview
   const [isEditingModules, setIsEditingModules] = useState(false)
   const [showNoApiModal, setShowNoApiModal] = useState(false)
 
-  // 初次进入时（或清除后），未配置 API 则弹窗提醒
+  // On first visit (or after clearing), show a modal if the API is not configured
   useEffect(() => {
     try {
       const dismissed = localStorage.getItem('dismiss-no-api-modal') === '1'
@@ -119,14 +65,14 @@ export default function Home() {
     try { localStorage.setItem('resume-data', JSON.stringify(ensured)) } catch {}
   }
 
-  // 将 resumeData 的变化统一同步到 jsonText，避免在其他组件渲染期间更新父组件
+  // Sync changes from resumeData into jsonText to avoid parent updates during other components' render
   useEffect(() => {
     if (resumeData) {
       setJsonText(JSON.stringify(resumeData, null, 2))
     }
   }, [resumeData])
 
-  // 将模块元信息注入到 JSON（并将 metadata 放在末尾以便查看在下方）
+  // Inject module metadata into the JSON (place metadata at the end for easier viewing below)
   const handleInjectModuleMeta = (modulesMeta) => {
     setResumeData(prev => {
       const base = ensureDefaultLayout(prev || {})
@@ -136,7 +82,7 @@ export default function Home() {
         personalInfo: base.personalInfo,
         summary: base.summary,
         education: base.education,
-        // 优先使用 experience（若无则回退 workExperience）
+        // Prefer experience; fall back to workExperience if missing
         experience: base.experience ?? base.workExperience,
         skills: base.skills,
         projects: base.projects,
@@ -157,7 +103,7 @@ export default function Home() {
     })
   }
 
-  // 恢复默认布局（不改动内容，仅重置左右列模块顺序）
+  // Reset to default layout (no content changes; only reset left/right module order)
   const resetToDefaultLayout = () => {
     setResumeData(prev => {
       const base = ensureDefaultLayout(prev || {})
@@ -165,13 +111,8 @@ export default function Home() {
         ...base,
         metadata: {
           ...base.metadata,
-          layout: {
-            ...(base.metadata?.layout || {}),
-            columns: {
-              left: ['summary', 'workExperience', 'education'],
-              right: ['skills', 'projects', 'awards', 'languages']
-            }
-          },
+          // no columns; keep any other layout fields intact
+          layout: { ...(base.metadata?.layout || {}) },
           modules: { ...DEFAULT_MODULE_META }
         }
       }
@@ -180,23 +121,19 @@ export default function Home() {
     })
   }
 
-  // 恢复默认样式：使用 defaults.js 替换 JSON 中的 metadata（布局/全局/模块）
+  // Reset default styles: replace metadata (layout/global/modules) in JSON using defaults.js
   const resetModuleStylesOnly = () => {
     setResumeData(prev => {
       const base = ensureDefaultLayout(prev || {})
-      const defaultColumns = {
-        left: ['summary', 'workExperience', 'education'],
-        right: ['skills', 'projects', 'awards', 'languages']
-      }
       const next = {
         ...base,
         metadata: {
-          layout: { columns: defaultColumns },
+          layout: {},
           global: { ...DEFAULT_GLOBAL_META },
           modules: { ...DEFAULT_MODULE_META }
         }
       }
-      // 立即同步到本地缓存与左侧 JSON 文本，避免被旧的 resume-json-text 覆盖
+      // Sync immediately to local cache and left-side JSON text to avoid being overwritten by old resume-json-text
       try {
         localStorage.setItem('resume-data', JSON.stringify(next))
         localStorage.setItem('resume-json-text', JSON.stringify(next, null, 2))
@@ -206,7 +143,7 @@ export default function Home() {
     })
   }
 
-  // 从localStorage加载API密钥和提供商选择
+  // Load API key and provider selection from localStorage
   useEffect(() => {
     const savedApiKey = localStorage.getItem('openai-api-key')
     const savedProvider = localStorage.getItem('api-provider')
@@ -222,7 +159,7 @@ export default function Home() {
     if (savedResumeText) {
       setResumeText(savedResumeText)
     }
-    // 优先恢复编辑中的 JSON 文本
+    // Prefer restoring the in-progress JSON text
     if (savedJsonText) {
       setJsonText(savedJsonText)
       try {
@@ -234,18 +171,22 @@ export default function Home() {
       try {
         const parsed = JSON.parse(savedDataRaw)
         const d = parsed?.data || parsed
-        // 若未从 savedJsonText 恢复，则使用数据生成 JSON 文本
+        // If not restored from savedJsonText, generate JSON text from data
         setResumeData((prev) => prev ?? d)
         setJsonText((prev) => prev || JSON.stringify(d, null, 2))
       } catch {}
     }
+    // If nothing was restored, ensure JSON editor shows an empty object by default
+    if (!savedJsonText && !savedDataRaw) {
+      setJsonText((prev) => prev || '{}')
+    }
   }, [])
 
-  // 保存API提供商选择到localStorage
+  // Save API provider selection to localStorage
   const handleProviderChange = (provider) => {
     setApiProvider(provider)
     localStorage.setItem('api-provider', provider)
-    // 清空API密钥，因为不同提供商的密钥格式不同
+    // Clear API key because different providers use different formats
     setApiKey('')
     localStorage.removeItem('openai-api-key')
   }
@@ -261,7 +202,7 @@ export default function Home() {
 
   const handleProcess = async () => {
     if (!resumeText.trim()) {
-      setError('请输入简历文本内容')
+      setError('Please enter resume text.')
       return
     }
 
@@ -270,16 +211,16 @@ export default function Home() {
     setResult(null)
 
     try {
-      // 若输入为有效 JSON，则直接载入并跳过一切 API 调用
+      // If input is valid JSON, load directly and skip any API calls
       let parsed = null
       try { parsed = JSON.parse(resumeText) } catch {}
       if (parsed && typeof parsed === 'object') {
         setDataAndJson(parsed)
-        setResult({ source: 'local', message: '已从输入的JSON载入数据' })
+        setResult({ source: 'local', message: 'Loaded data from input JSON.' })
         return
       }
 
-      // 输入不是 JSON 时：有 API 则调用解析接口；无 API 弹窗引导
+      // When input is not JSON: if API is set, call parse endpoint; otherwise show modal guidance
       const key = apiKey?.trim()
       if (key) {
         const response = await fetch('/api/parse-resume', {
@@ -299,7 +240,7 @@ export default function Home() {
           if (errorData.fallback && errorData.details) {
             throw new Error(`${errorData.error}\n\n${errorData.details}`)
           }
-          throw new Error(errorData.error || '简历解析失败')
+          throw new Error(errorData.error || 'Resume parsing failed.')
         }
 
         const data = await response.json()
@@ -307,18 +248,18 @@ export default function Home() {
         const d = data?.data || data
         setDataAndJson(d)
       } else {
-        // 无 API Key：提示使用默认 Prompt 在模型中生成 JSON 后粘贴
+        // No API key: prompt user to use the default Prompt to generate JSON with an LLM and paste it
         setError(null)
         setShowNoApiModal(true)
       }
     } catch (err) {
-      setError(err.message || '处理失败，请重试')
+      setError(err.message || 'Processing failed, please try again.')
     } finally {
       setProcessingParse(false)
     }
   }
 
-  // 等待 DOM 中出现指定元素（用于解析后等待预览渲染）
+  // Wait for a DOM element to appear (used to wait for preview rendering after parsing)
   const waitForElement = async (id, timeout = 5000) => {
     const start = performance.now()
     while (performance.now() - start < timeout) {
@@ -329,9 +270,9 @@ export default function Home() {
     return null
   }
 
-  // 一键生成PDF：
-  // - 有 API：不重新解析，必须已有预览（resumeData），直接导出 PDF
-  // - 无 API：输入为有效 JSON 时载入预览并导出；否则提示需要 API/JSON
+  // One-click PDF generation:
+  // - With API: do not re-parse; an existing preview (resumeData) is required; export PDF directly
+  // - Without API: if input is valid JSON, load preview and export; otherwise prompt for API/JSON
   const handleProcessToPDF = async () => {
     setProcessingPdf(true)
     setError(null)
@@ -340,42 +281,42 @@ export default function Home() {
     try {
       const key = apiKey?.trim()
       if (key) {
-        // 有 API：仅使用已渲染的预览导出 PDF
+        // With API: export PDF using the already rendered preview only
         if (resumeData) {
           const el = await waitForElement('resume-preview', 4000)
           if (el) {
             await handlePrint()
           } else {
-            setError('预览尚未渲染，请稍后重试。')
+            setError('Preview has not rendered yet. Please try again shortly.')
           }
         } else {
-          setError('请先点击“开始解析”生成预览，再导出 PDF。')
+          setError('Please click "Start Parsing" to render the preview, then export PDF.')
         }
       } else {
-        // 无 API：若输入为有效 JSON，载入预览并导出；否则提示
+        // No API: if input is valid JSON, load preview and export; otherwise show a hint
         let parsed = null
         try {
           parsed = JSON.parse(resumeText)
         } catch {}
         if (parsed && typeof parsed === 'object') {
-          // 如果尚未有预览，先载入再导出
+          // If preview does not exist yet, load first then export
           if (!resumeData) {
             setDataAndJson(parsed)
             const el = await waitForElement('resume-preview', 4000)
             if (el) {
               await handlePrint()
             } else {
-              setError('预览尚未渲染，请稍后重试或重新应用JSON。')
+              setError('Preview has not rendered yet. Please try again or re-apply the JSON.')
             }
           } else {
             await handlePrint()
           }
         } else {
-          setError('未配置API，且输入不是有效JSON。请接入API或使用默认Prompt在大模型中生成JSON后粘贴。')
+          setError('No API configured and input is not valid JSON. Please connect an API or use the default Prompt to generate JSON with your LLM, then paste it here.')
         }
       }
     } catch (err) {
-      setError(err.message || '处理失败，请重试')
+      setError(err.message || 'Processing failed, please try again.')
     } finally {
       setProcessingPdf(false)
     }
@@ -415,70 +356,18 @@ export default function Home() {
   }
 
   const loadDemoData = () => {
-    const demoResume = `张三
-软件工程师
+    setResumeText(DEMO_RESUME_TEXT)
+    setError(null)
+  }
 
-联系方式：
-电话：138-0000-0000
-邮箱：zhangsan@email.com
-地址：北京市朝阳区
-
-教育背景：
-2018-2022 北京理工大学 计算机科学与技术 本科 GPA: 3.8/4.0
-
-工作经验：
-2022.07-至今 阿里巴巴集团 前端开发工程师
-- 负责电商平台前端开发，使用React、Vue.js等技术栈
-- 优化页面性能，提升用户体验，页面加载速度提升30%
-- 参与微服务架构设计，协助团队完成系统重构
-- 指导2名实习生，协助其快速融入团队
-
-2021.06-2021.09 腾讯科技 前端开发实习生
-- 参与QQ音乐Web端开发，负责播放器组件优化
-- 学习并应用TypeScript，提升代码质量和可维护性
-- 配合后端团队完成API接口对接
-
-技能专长：
-编程语言：JavaScript, TypeScript, Python, Java
-前端技术：React, Vue.js, HTML5, CSS3, Sass, Webpack
-后端技术：Node.js, Express, MySQL, MongoDB
-工具平台：Git, Docker, Jenkins, AWS
-
-项目经验：
-1. 电商管理系统 (2022-2023)
-   - 技术栈：React + TypeScript + Ant Design + Node.js
-   - 实现商品管理、订单处理、用户管理等核心功能
-   - 支持多角色权限管理，日活跃用户1000+
-
-2. 个人博客系统 (2021)
-   - 技术栈：Vue.js + Express + MongoDB
-   - 实现文章发布、评论互动、标签分类等功能
-   - 响应式设计，支持移动端访问
-
-获奖荣誉：
-- 2023年 阿里巴巴集团优秀员工
-- 2022年 北京理工大学优秀毕业生
-- 2021年 全国大学生程序设计竞赛三等奖
-
-语言能力：
-- 中文：母语
-- 英语：CET-6，能够流利阅读英文技术文档
-
-自我评价：
-热爱编程，具有强烈的学习能力和团队合作精神。善于沟通，能够快速适应新环境和新技术。对前端技术有深入理解，关注用户体验和代码质量。`;
-    
-    setResumeText(demoResume);
-    setError(null);
-  };
-
-  // 实时保存：输入内容变化时写入 localStorage
+  // Real-time save: write input changes to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('resume-text', resumeText)
     } catch {}
   }, [resumeText])
 
-  // 实时保存：解析结果变化时写入 localStorage
+  // Real-time save: write parsed result changes to localStorage
   useEffect(() => {
     try {
       if (resumeData) {
@@ -489,32 +378,21 @@ export default function Home() {
     } catch {}
   }, [resumeData])
 
-  // JSON 文本编辑：根据模式（实时/手动）同步到简历预览
+  // JSON text editing: always sync to preview in realtime
   const handleJsonEdit = (text) => {
     setJsonText(text)
-    if (autoSyncJson) {
-      try {
-        const parsed = JSON.parse(text)
-        setResumeData(ensureDefaultLayout(parsed))
-        setError(null)
-      } catch (e) {
-        // 保留上次有效的 resumeData，不覆盖
-      }
-    }
-  }
-
-  // 手动应用 JSON 更改
-  const applyJsonChanges = () => {
     try {
-      const parsed = JSON.parse(jsonText)
+      const parsed = JSON.parse(text)
       setResumeData(ensureDefaultLayout(parsed))
       setError(null)
     } catch (e) {
-      setError('JSON格式错误，请修正后再点击“应用更改”')
+      // Keep last valid resumeData without overwriting when text is invalid
     }
   }
 
-  // 区域拖拽：跨列和列内排序
+  // Removed manual apply; realtime sync makes this unnecessary
+
+  // Section drag: across columns and within column ordering
   const handleMoveSection = ({ sectionKey, toColumn, toIndex }) => {
     if (!sectionKey || !toColumn) return
     setResumeData(prev => {
@@ -548,7 +426,7 @@ export default function Home() {
     })
   }
 
-  // 列表项拖拽重排：工作经历、教育、项目、获奖、语言（顶层）
+  // Reorder list items: Experience, Education, Projects, Awards, Languages (top-level)
   const handleReorderItem = ({ sectionKey, fromIndex, toIndex }) => {
     if (typeof fromIndex !== 'number' || typeof toIndex !== 'number') return
     setResumeData(prev => {
@@ -579,37 +457,34 @@ export default function Home() {
     })
   }
 
-  // 保存编辑中的 JSON 文本到 localStorage
+  // Save edited JSON text to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('resume-json-text', jsonText || '')
     } catch {}
   }, [jsonText])
 
-  // 计算一键生成 PDF 的可用性：
-  // - 有 API：必须已有预览（resumeData）
-  // - 无 API：输入为有效 JSON 或已有预览
+  // Compute availability for one-click PDF generation:
+  // - With API: preview must already exist (resumeData)
+  // - Without API: input must be valid JSON or preview already exists
   const canGeneratePDF = (apiKey && apiKey.trim())
     ? !!resumeData
     : (() => { try { const o = JSON.parse(resumeText); return !!o && typeof o === 'object' } catch { return !!resumeData } })()
   
-  // 结果区组件化（高度测量逻辑移入 ResumeWorkspace）
+  // Result section componentized (height measurement logic moved into ResumeWorkspace)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="mx-auto px-4 py-8 w-full">
+    <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900 flex flex-col">
+      <div className="mx-auto px-1 sm:px-3 lg:px-4 pt-2 pb-4 w-full flex flex-col h-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-end mb-4">
-            <ThemeToggle />
-          </div>
+        <div className="text-center mb-2">
           <Header />
         </div>
 
         {/* Main Content */}
-        <div className="space-y-6">
+        <div className="space-y-2 flex-1 flex flex-col">
           {/* Configuration and Input Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 h-full">
             <ConfigPanel
               apiProvider={apiProvider}
               handleProviderChange={handleProviderChange}
@@ -635,22 +510,20 @@ export default function Home() {
           {/* Error Display */}
           <ErrorAlert error={error} />
 
-          {/* Results Section */}
-          {(resumeData || jsonText) && (
-            <ResumeWorkspace
-              resumeData={resumeData}
-              jsonText={jsonText}
-              onJsonChange={handleJsonEdit}
-              onDownloadJSON={downloadJSON}
-              onPrint={handlePrint}
-              isEditingModules={isEditingModules}
-              onEditingChange={setIsEditingModules}
-              onEditMeta={handleInjectModuleMeta}
-              onResetStyles={resetModuleStylesOnly}
-            />
-          )}
+          {/* Results Section: 始终显示工作区，确保 JSON 模块一直打开 */}
+          <ResumeWorkspace
+            resumeData={resumeData}
+            jsonText={jsonText}
+            onJsonChange={handleJsonEdit}
+            onDownloadJSON={downloadJSON}
+            onPrint={handlePrint}
+            isEditingModules={isEditingModules}
+            onEditingChange={setIsEditingModules}
+            onEditMeta={handleInjectModuleMeta}
+          onResetStyles={resetModuleStylesOnly}
+          />
 
-          {/* 使用说明已移至顶部并简化 */}
+          {/* Usage instructions moved to the top and simplified */}
         </div>
 
         {/* No API Modal */}
@@ -660,17 +533,18 @@ export default function Home() {
         }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>未配置 API：请用大模型生成 JSON</AlertDialogTitle>
+              <AlertDialogTitle>No API configured: Generate JSON with your LLM</AlertDialogTitle>
               <AlertDialogDescription>
-                操作步骤：复制左侧“默认 Prompt”，在你使用的大模型（如 ChatGPT、DeepSeek）中运行得到结构化 JSON；然后将该 JSON 粘贴到左侧“简历文本输入”，点击“开始解析”即可渲染预览。
+                Steps: Copy the "Default Prompt" on the left and run it in your LLM (e.g., ChatGPT, DeepSeek) to obtain structured JSON. Then paste that JSON into the "Resume Text Input" on the left and click "Start Parsing" to render the preview.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowNoApiModal(false)}>稍后再说</AlertDialogCancel>
-              <AlertDialogAction onClick={copyDefaultPrompt}>复制默认 Prompt</AlertDialogAction>
+              <AlertDialogCancel onClick={() => setShowNoApiModal(false)}>Maybe later</AlertDialogCancel>
+              <AlertDialogAction onClick={copyDefaultPrompt}>Copy Default Prompt</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <Footer />
       </div>
     </div>
   )

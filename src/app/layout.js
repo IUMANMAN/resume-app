@@ -5,13 +5,13 @@ import { ThemeProvider } from '@/components/theme-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: '简历文本转JSON工具',
-  description: '将简历文本内容转换为结构化的JSON数据',
+  title: 'AI Resume Generator',
+  description: 'Paste resume text or JSON, parse with AI, and export PDF in one click',
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="zh" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider
           attribute="class"

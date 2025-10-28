@@ -1,24 +1,52 @@
-# 简历PDF转JSON工具
+# AI 文本简历一键生成
 
-一个基于Next.js构建的现代化Web应用，可以将PDF格式的简历快速转换为结构化的JSON数据。
+一个基于 Next.js 的现代化 Web 应用，支持粘贴简历文本或 JSON，AI 解析与一键生成 PDF。输入为 JSON 时直接加载，无需调用 AI；输入为文本且配置了 API 密钥时可使用 AI 解析为结构化数据。
 
 ## 功能特性
 
-- 📄 **PDF上传**: 支持拖拽或点击上传PDF简历文件
-- 🔍 **智能解析**: 自动提取个人信息、教育背景、工作经验、技能和项目经验
-- 📊 **实时预览**: 解析结果实时显示，支持JSON格式预览
-- 💾 **一键下载**: 支持将解析结果导出为JSON文件
-- 🎨 **现代UI**: 使用shadcn/ui组件库，提供美观的用户界面
-- 📱 **响应式设计**: 完美适配桌面和移动设备
+- ✂️ 文本/JSON 输入：支持粘贴简历文本或 JSON 数据
+- 🤖 智能解析：有密钥时调用 API 解析文本为结构化 JSON
+- ⚡ 直接处理 JSON：当输入为 JSON 时跳过 AI，直接预览与导出
+- 🖨️ 一键生成 PDF：基于已渲染预览生成排版良好的 PDF
+- 👀 实时预览：解析结果即时可视化，方便校验和微调
+- 🌓 主题切换：内置明暗主题，适配不同环境
+
+## 工作原理
+
+- 解析流程：
+  - 输入为 JSON：本地直接解析并加载为 `resumeData`，不调用 API。
+  - 输入为文本：若配置了 `OPENAI_API_KEY`，调用 `/api/parse-resume` 将文本转为 JSON；未配置则提示无法使用 AI。
+- PDF 生成：
+  - 有 API：基于当前已渲染的预览（`resumeData`）；若输入为 JSON 也可直接生成。
+  - 无 API：支持在已有预览或输入为有效 JSON 时直接生成。
 
 ## 技术栈
 
-- **前端框架**: Next.js 15 (App Router)
-- **样式**: Tailwind CSS
-- **UI组件**: shadcn/ui
-- **PDF解析**: pdf-parse
-- **图标**: Lucide React
-- **语言**: JavaScript (非TypeScript)
+- 前端框架：Next.js 16（App Router）
+- 样式：Tailwind CSS
+- UI 组件：shadcn/ui
+- PDF：`html2canvas` + `jspdf`
+- 图标：Lucide React
+- 语言：JavaScript
+
+## 项目结构
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── parse-resume/
+│   │       └── route.js          # 文本解析为 JSON 的 API
+│   ├── globals.css               # 全局样式
+│   ├── layout.js                 # 根布局与元信息
+│   └── page.js                   # 主页面与处理逻辑
+├── components/
+│   ├── modules/                  # 输入、配置、工作区等模块
+│   ├── ui/                       # shadcn/ui 组件封装
+│   └── json-viewer.jsx           # JSON 视图
+└── lib/
+    └── utils.js                  # 工具函数（含 cn 合并）
+```
 
 ## 快速开始
 
@@ -28,71 +56,45 @@
 npm install
 ```
 
-### 启动开发服务器
+
+### 本地开发
 
 ```bash
 npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+打开 `http://localhost:3000` 访问应用。
 
-### 构建生产版本
+### 构建与启动
 
 ```bash
 npm run build
 npm start
 ```
 
-## 使用方法
+## 使用指南
 
-1. **上传PDF**: 点击上传区域选择PDF简历文件
-2. **开始解析**: 点击"开始解析"按钮处理文件
-3. **查看结果**: 在右侧面板查看解析后的JSON数据
-4. **下载文件**: 点击"下载JSON文件"保存结果
+- 粘贴简历文本：点击“开始解析”，在配置了密钥时由 AI 将文本转为 JSON 并预览。
+- 粘贴 JSON：直接加载为预览数据，跳过 AI 调用。
+- 一键生成 PDF：确保右侧预览已渲染，点击生成 PDF。
 
-## 解析字段
+## JSON 示例
 
-应用会尝试从PDF中提取以下信息：
-
-- **个人信息**: 姓名、邮箱、电话
-- **教育背景**: 学校、学位、专业、时间
-- **工作经验**: 公司、职位、工作描述、时间
-- **技能**: 技术技能列表
-- **项目经验**: 项目名称、描述、技术栈
-
-## 项目结构
-
+```json
+{
+  "personal": { "name": "张三", "email": "zhangsan@example.com", "phone": "13800000000" },
+  "education": [
+    { "school": "XX大学", "degree": "本科", "major": "计算机科学", "start": "2017-09", "end": "2021-06" }
+  ],
+  "experience": [
+    { "company": "ABC科技", "title": "前端工程师", "start": "2021-07", "end": "2024-10", "desc": "负责 Web 应用开发与性能优化" }
+  ],
+  "skills": ["JavaScript", "React", "Tailwind"],
+  "projects": [
+    { "name": "简历生成器", "tech": ["Next.js", "Tailwind"], "desc": "实现简历预览与 PDF 导出" }
+  ]
+}
 ```
-src/
-├── app/
-│   ├── api/
-│   │   └── parse-pdf/
-│   │       └── route.js          # PDF解析API
-│   ├── globals.css               # 全局样式
-│   ├── layout.js                 # 根布局
-│   └── page.js                   # 主页面
-├── components/
-│   └── ui/                       # shadcn/ui组件
-└── lib/
-    └── utils.js                  # 工具函数
-```
-
-## 自定义解析逻辑
-
-如需修改PDF解析逻辑，请编辑 `src/app/api/parse-pdf/route.js` 文件中的解析函数：
-
-- `extractPersonalInfo()`: 个人信息提取
-- `extractEducation()`: 教育背景提取
-- `extractExperience()`: 工作经验提取
-- `extractSkills()`: 技能提取
-- `extractProjects()`: 项目经验提取
-
-## 注意事项
-
-- 支持的文件格式：PDF
-- 最大文件大小：建议不超过10MB
-- 解析准确性取决于PDF的文本结构和格式
-- 建议使用文本型PDF而非扫描件
 
 ## 许可证
 

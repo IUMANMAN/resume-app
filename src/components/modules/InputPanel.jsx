@@ -18,55 +18,55 @@ export function InputPanel({
   canGeneratePDF = true
 }) {
   return (
-    <Card className="h-[360px]">
-      <CardHeader>
+    <Card className="shadow-none border-neutral-200 bg-white dark:bg-neutral-900 animate-fade-in h-full">
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          简历文本输入
+          Resume Text Input
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 h-full overflow-auto">
-        <div>
-          <Label htmlFor="resumeText">简历内容</Label>
+      <CardContent className="space-y-3 flex flex-col h-full">
+        <div className="flex flex-col gap-1 flex-1">
+          <Label htmlFor="resumeText">Resume Content</Label>
           <Textarea
             id="resumeText"
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
-            placeholder="请粘贴简历文本或已解析的JSON内容..."
-            className="h-[180px] resize-none overflow-y-auto"
+            placeholder="Paste raw resume text or a pre-parsed JSON..."
+            className="flex-1 min-h-[240px] sm:min-h-[300px] resize-y overflow-auto scrollbar-modern"
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={loadDemoData} variant="outline" className="flex-1 sm:flex-none">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Button onClick={loadDemoData} variant="outline" className="w-full rounded-full px-3 transition-colors duration-200 ease-out hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             <Sparkles className="h-4 w-4 mr-2" />
-            加载演示数据
+            Load Demo Data
           </Button>
 
-          <Button onClick={handleProcess} disabled={processingParse || processingPdf || !canProcess} className="flex-1">
+          <Button onClick={handleProcess} disabled={processingParse || processingPdf || !canProcess} className="w-full rounded-full px-3 transition-all duration-200 ease-out hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             {processingParse ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                处理中...
+                Processing...
               </>
             ) : (
               <>
                 <FileText className="h-4 w-4 mr-2" />
-                开始解析
+                Parse
               </>
             )}
           </Button>
 
-          <Button onClick={handleProcessToPDF} disabled={processingPdf || processingParse || !canGeneratePDF} className="flex-1">
+          <Button onClick={handleProcessToPDF} disabled={processingPdf || processingParse || !canGeneratePDF} className="w-full rounded-full px-3 transition-all duration-200 ease-out hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             {processingPdf ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                处理中...
+                Processing...
               </>
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                一键生成PDF
+                Generate PDF
               </>
             )}
           </Button>

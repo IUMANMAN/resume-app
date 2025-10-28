@@ -92,7 +92,7 @@ function Node({ name, value, level, defaultCollapsedLevel }) {
   )
 }
 
-export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel = 2, collapsible = true, minimal = false, editable = false, value, onChange }) {
+export function JsonViewer({ data, title = "JSON Data", defaultCollapsedLevel = 2, collapsible = true, minimal = false, editable = false, value, onChange }) {
   const copyToClipboard = () => {
     try {
       const json = JSON.stringify(data, null, 2)
@@ -100,7 +100,7 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
     } catch {}
   }
 
-  // 简易语法高亮：将 JSON 字符串转为带标记的 HTML（非折叠模式）
+  // Simple syntax highlight: convert JSON string into marked-up HTML (non-collapsible mode)
   const Syntax = ({ json }) => {
     const html = (() => {
       if (!json) return ""
@@ -108,16 +108,16 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-      // 键名
+      // Keys
       s = s.replace(/\"([^\"]+)\"(?=\s*:)/g, '<span class="text-blue-600 dark:text-blue-300">"$1"</span>')
-      // 字符串值
+      // String values
       s = s.replace(/:\s*\"([^\"]*)\"/g, ': <span class="text-emerald-600 dark:text-emerald-300">"$1"</span>')
-      // 数字（避免匹配到我们插入的标签属性，如 class="text-blue-600"）
-      // 1) 对象中的数字：冒号后出现的纯数字
+      // Numbers (avoid matching attributes like class="text-blue-600")
+      // 1) Numbers in objects: pure numbers after colon
       s = s.replace(/(:\s*)(-?\d+(?:\.\d+)?)/g, '$1<span class="text-purple-600 dark:text-purple-300">$2</span>')
-      // 2) 数组中的数字：在 '[' 或 ',' 之后出现的纯数字
+      // 2) Numbers in arrays: pure numbers after '[' or ','
       s = s.replace(/([\[,]\s*)(-?\d+(?:\.\d+)?)/g, '$1<span class="text-purple-600 dark:text-purple-300">$2</span>')
-      // 布尔
+      // Boolean
       s = s.replace(/\b(true|false)\b/g, '<span class="text-orange-600 dark:text-orange-300">$1</span>')
       // null
       s = s.replace(/\bnull\b/g, '<span class="text-gray-500">null</span>')
@@ -126,7 +126,7 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
     return <pre className="font-mono text-sm whitespace-pre overflow-visible" dangerouslySetInnerHTML={{ __html: html }} />
   }
 
-  // 纯 JSON 最小模式：可选编辑；编辑时使用叠层方案（textarea + 语法高亮预览）
+  // Minimal pure-JSON mode: optional editing; overlay approach (textarea + highlighted preview)
   if (minimal) {
     if (editable) {
       const text = value ?? JSON.stringify(data, null, 2)
@@ -138,18 +138,18 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
 
       return (
         <div className="relative overflow-auto bg-gray-50 dark:bg-gray-800 rounded-md">
-          {/* 内容包裹层：使用 max-content 使其宽度随最长行增长，从而支持水平滚动 */}
+          {/* Content wrapper: use max-content so width follows longest line, enabling horizontal scroll */}
           <div className="relative w-max min-w-full">
-            {/* 隐形占位层：用于撑开容器高度，使页面自然滚动 */}
+            {/* Invisible placeholder: expands container height to make page scroll naturally */}
             <pre
               aria-hidden
               className="m-0 font-mono text-sm leading-6 p-4 opacity-0 select-none pointer-events-none whitespace-pre"
             >{text}</pre>
-            {/* 高亮预览层（不可交互） */}
+            {/* Highlighted preview layer (non-interactive) */}
             <pre
               className="absolute inset-0 m-0 font-mono text-sm leading-6 p-4 overflow-visible pointer-events-none"
               dangerouslySetInnerHTML={{ __html: (() => {
-              // 使用 Syntax 高亮当前文本
+              // Use Syntax to highlight current text
               const html = (() => {
                 if (!text) return ""
                 let s = text
@@ -168,7 +168,7 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
             })() }}
             />
 
-            {/* 输入层（透明文本 + 可见光标） */}
+            {/* Input layer (transparent text + visible caret) */}
             <textarea
               value={text}
               onChange={handleChange}
@@ -176,7 +176,7 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
               wrap="off"
               data-role="json-scroll"
               spellCheck={false}
-              aria-label="编辑JSON"
+              aria-label="Edit JSON"
             />
           </div>
         </div>
@@ -191,18 +191,18 @@ export function JsonViewer({ data, title = "JSON 数据", defaultCollapsedLevel 
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             {title}
           </Badge>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{collapsible ? '结构化、可折叠展示' : '格式化、语法高亮'}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{collapsible ? 'Structured, collapsible view' : 'Formatted, syntax highlighted'}</span>
         </div>
         <Button variant="outline" size="sm" onClick={copyToClipboard}>
-          <Copy className="h-4 w-4 mr-2" /> 复制
+          <Copy className="h-4 w-4 mr-2" /> Copy
         </Button>
       </div>
-      <div className="p-4 max-h-[70vh] overflow-y-auto" data-role="json-scroll">
+      <div className="p-3 max-h-[70vh] overflow-y-auto" data-role="json-scroll">
         {collapsible ? (
           <Node name={undefined} value={data} level={0} defaultCollapsedLevel={defaultCollapsedLevel} />
         ) : (
