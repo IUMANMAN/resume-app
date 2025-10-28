@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,28 +8,236 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FileText, Key, Loader2, Download, Eye, EyeOff, CheckCircle, AlertCircle, Sparkles } from "lucide-react";
+import { ResumeDisplay } from '@/components/resume-display'
+import { JsonViewer } from '@/components/json-viewer'
+import { ConfigPanel } from '@/components/modules/ConfigPanel'
+import { InputPanel } from '@/components/modules/InputPanel'
+import { DEFAULT_MODULE_META, DEFAULT_GLOBAL_META, ensureDefaultLayout } from '@/app/defaults'
+import { ResumeWorkspace } from '@/components/home/ResumeWorkspace'
+import { Header } from '@/components/home/Header'
+import { ErrorAlert } from '@/components/home/ErrorAlert'
+
+// 接口中使用的解析 Prompt（供在无 API 时参考与改写）
+const DEFAULT_PROMPT = `请将以下简历文本解析为标准化的JSON格式。请严格按照以下JSON结构返回数据，不要添加任何其他文本或解释：
+
+{
+  "personalInfo": {
+    "name": "姓名",
+    "email": "邮箱",
+    "phone": "电话",
+    "address": "地址",
+    "linkedin": "LinkedIn链接",
+    "github": "GitHub链接",
+    "website": "个人网站"
+  },
+  "summary": "个人简介或职业目标",
+  "education": [
+    {
+      "institution": "学校名称",
+      "degree": "学位",
+      "major": "专业",
+      "graduationDate": "毕业时间",
+      "gpa": "GPA（如有）"
+    }
+  ],
+  "experience": [
+    {
+      "company": "公司名称",
+      "position": "职位",
+      "startDate": "开始时间",
+      "endDate": "结束时间",
+      "description": "工作描述",
+      "achievements": ["成就1", "成就2"]
+    }
+  ],
+  "skills": {
+    "technical": ["技术技能"],
+    "languages": ["语言技能"],
+    "soft": ["软技能"]
+  },
+  "projects": [
+    {
+      "name": "项目名称",
+      "description": "项目描述",
+      "technologies": ["使用技术"],
+      "link": "项目链接（如有）"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "证书名称",
+      "issuer": "颁发机构",
+      "date": "获得时间"
+    }
+  ]
+}
+
+请只返回JSON数据，不要包含任何其他文本。`
 
 export default function Home() {
   const [resumeText, setResumeText] = useState('')
-  const [processing, setProcessing] = useState(false)
+  const [processingParse, setProcessingParse] = useState(false)
+  const [processingPdf, setProcessingPdf] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [apiKey, setApiKey] = useState('')
   const [apiProvider, setApiProvider] = useState('openai') // 'openai' or 'deepseek'
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [resumeData, setResumeData] = useState(null)
+  const [jsonText, setJsonText] = useState('')
+  const [autoSyncJson, setAutoSyncJson] = useState(true)
+  const [isEditingModules, setIsEditingModules] = useState(false)
+  const [showNoApiModal, setShowNoApiModal] = useState(false)
+
+  // 初次进入时（或清除后），未配置 API 则弹窗提醒
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem('dismiss-no-api-modal') === '1'
+      const key = localStorage.getItem('openai-api-key')
+      if (!dismissed && !(key && key.trim())) {
+        setShowNoApiModal(true)
+      }
+    } catch {}
+  }, [])
+
+  const copyDefaultPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(DEFAULT_PROMPT)
+    } catch {}
+  }
+
+  
+
+  const setDataAndJson = (nextData) => {
+    const ensured = ensureDefaultLayout(nextData)
+    setResumeData(ensured)
+    try { localStorage.setItem('resume-data', JSON.stringify(ensured)) } catch {}
+  }
+
+  // 将 resumeData 的变化统一同步到 jsonText，避免在其他组件渲染期间更新父组件
+  useEffect(() => {
+    if (resumeData) {
+      setJsonText(JSON.stringify(resumeData, null, 2))
+    }
+  }, [resumeData])
+
+  // 将模块元信息注入到 JSON（并将 metadata 放在末尾以便查看在下方）
+  const handleInjectModuleMeta = (modulesMeta) => {
+    setResumeData(prev => {
+      const base = ensureDefaultLayout(prev || {})
+      const listedKeys = ['personalInfo', 'summary', 'education', 'experience', 'workExperience', 'skills', 'projects', 'certifications', 'awards', 'languages', 'metadata']
+      const rest = Object.fromEntries(Object.entries(base || {}).filter(([k]) => !listedKeys.includes(k)))
+      const nextOrdered = {
+        personalInfo: base.personalInfo,
+        summary: base.summary,
+        education: base.education,
+        // 优先使用 experience（若无则回退 workExperience）
+        experience: base.experience ?? base.workExperience,
+        skills: base.skills,
+        projects: base.projects,
+        certifications: base.certifications,
+        awards: base.awards,
+        languages: base.languages,
+        ...rest,
+        metadata: {
+          ...(base.metadata || {}),
+          modules: {
+            ...(base.metadata?.modules || {}),
+            ...modulesMeta
+          }
+        }
+      }
+      try { localStorage.setItem('resume-data', JSON.stringify(nextOrdered)) } catch {}
+      return nextOrdered
+    })
+  }
+
+  // 恢复默认布局（不改动内容，仅重置左右列模块顺序）
+  const resetToDefaultLayout = () => {
+    setResumeData(prev => {
+      const base = ensureDefaultLayout(prev || {})
+      const next = {
+        ...base,
+        metadata: {
+          ...base.metadata,
+          layout: {
+            ...(base.metadata?.layout || {}),
+            columns: {
+              left: ['summary', 'workExperience', 'education'],
+              right: ['skills', 'projects', 'awards', 'languages']
+            }
+          },
+          modules: { ...DEFAULT_MODULE_META }
+        }
+      }
+      try { localStorage.setItem('resume-data', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // 恢复默认样式：使用 defaults.js 替换 JSON 中的 metadata（布局/全局/模块）
+  const resetModuleStylesOnly = () => {
+    setResumeData(prev => {
+      const base = ensureDefaultLayout(prev || {})
+      const defaultColumns = {
+        left: ['summary', 'workExperience', 'education'],
+        right: ['skills', 'projects', 'awards', 'languages']
+      }
+      const next = {
+        ...base,
+        metadata: {
+          layout: { columns: defaultColumns },
+          global: { ...DEFAULT_GLOBAL_META },
+          modules: { ...DEFAULT_MODULE_META }
+        }
+      }
+      // 立即同步到本地缓存与左侧 JSON 文本，避免被旧的 resume-json-text 覆盖
+      try {
+        localStorage.setItem('resume-data', JSON.stringify(next))
+        localStorage.setItem('resume-json-text', JSON.stringify(next, null, 2))
+      } catch {}
+      setJsonText(JSON.stringify(next, null, 2))
+      return next
+    })
+  }
 
   // 从localStorage加载API密钥和提供商选择
   useEffect(() => {
     const savedApiKey = localStorage.getItem('openai-api-key')
     const savedProvider = localStorage.getItem('api-provider')
+    const savedResumeText = localStorage.getItem('resume-text')
+    const savedJsonText = localStorage.getItem('resume-json-text')
+    const savedDataRaw = localStorage.getItem('resume-data') || localStorage.getItem('resume-result')
     if (savedApiKey) {
       setApiKey(savedApiKey)
     }
     if (savedProvider) {
       setApiProvider(savedProvider)
+    }
+    if (savedResumeText) {
+      setResumeText(savedResumeText)
+    }
+    // 优先恢复编辑中的 JSON 文本
+    if (savedJsonText) {
+      setJsonText(savedJsonText)
+      try {
+        const parsed = JSON.parse(savedJsonText)
+        setResumeData(parsed)
+      } catch {}
+    }
+    if (savedDataRaw) {
+      try {
+        const parsed = JSON.parse(savedDataRaw)
+        const d = parsed?.data || parsed
+        // 若未从 savedJsonText 恢复，则使用数据生成 JSON 文本
+        setResumeData((prev) => prev ?? d)
+        setJsonText((prev) => prev || JSON.stringify(d, null, 2))
+      } catch {}
     }
   }, [])
 
@@ -50,7 +258,6 @@ export default function Home() {
       localStorage.removeItem('openai-api-key')
     }
   }
-  const [showApiKey, setShowApiKey] = useState(false)
 
   const handleProcess = async () => {
     if (!resumeText.trim()) {
@@ -58,55 +265,154 @@ export default function Home() {
       return
     }
 
-    setProcessing(true)
+    setProcessingParse(true)
     setError(null)
     setResult(null)
 
     try {
-      const response = await fetch('/api/parse-resume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resumeText: resumeText,
-          apiKey: apiKey.trim() || undefined,
-          provider: apiProvider
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        if (errorData.fallback && errorData.details) {
-          throw new Error(`${errorData.error}\n\n${errorData.details}`)
-        }
-        throw new Error(errorData.error || '简历解析失败')
+      // 若输入为有效 JSON，则直接载入并跳过一切 API 调用
+      let parsed = null
+      try { parsed = JSON.parse(resumeText) } catch {}
+      if (parsed && typeof parsed === 'object') {
+        setDataAndJson(parsed)
+        setResult({ source: 'local', message: '已从输入的JSON载入数据' })
+        return
       }
 
-      const data = await response.json()
-      setResult(data)
+      // 输入不是 JSON 时：有 API 则调用解析接口；无 API 弹窗引导
+      const key = apiKey?.trim()
+      if (key) {
+        const response = await fetch('/api/parse-resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resumeText: resumeText,
+            apiKey: key,
+            provider: apiProvider
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          if (errorData.fallback && errorData.details) {
+            throw new Error(`${errorData.error}\n\n${errorData.details}`)
+          }
+          throw new Error(errorData.error || '简历解析失败')
+        }
+
+        const data = await response.json()
+        setResult(data)
+        const d = data?.data || data
+        setDataAndJson(d)
+      } else {
+        // 无 API Key：提示使用默认 Prompt 在模型中生成 JSON 后粘贴
+        setError(null)
+        setShowNoApiModal(true)
+      }
     } catch (err) {
       setError(err.message || '处理失败，请重试')
     } finally {
-      setProcessing(false)
+      setProcessingParse(false)
     }
   }
 
-  // 下载JSON文件
+  // 等待 DOM 中出现指定元素（用于解析后等待预览渲染）
+  const waitForElement = async (id, timeout = 5000) => {
+    const start = performance.now()
+    while (performance.now() - start < timeout) {
+      const el = document.getElementById(id)
+      if (el) return el
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    return null
+  }
+
+  // 一键生成PDF：
+  // - 有 API：不重新解析，必须已有预览（resumeData），直接导出 PDF
+  // - 无 API：输入为有效 JSON 时载入预览并导出；否则提示需要 API/JSON
+  const handleProcessToPDF = async () => {
+    setProcessingPdf(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const key = apiKey?.trim()
+      if (key) {
+        // 有 API：仅使用已渲染的预览导出 PDF
+        if (resumeData) {
+          const el = await waitForElement('resume-preview', 4000)
+          if (el) {
+            await handlePrint()
+          } else {
+            setError('预览尚未渲染，请稍后重试。')
+          }
+        } else {
+          setError('请先点击“开始解析”生成预览，再导出 PDF。')
+        }
+      } else {
+        // 无 API：若输入为有效 JSON，载入预览并导出；否则提示
+        let parsed = null
+        try {
+          parsed = JSON.parse(resumeText)
+        } catch {}
+        if (parsed && typeof parsed === 'object') {
+          // 如果尚未有预览，先载入再导出
+          if (!resumeData) {
+            setDataAndJson(parsed)
+            const el = await waitForElement('resume-preview', 4000)
+            if (el) {
+              await handlePrint()
+            } else {
+              setError('预览尚未渲染，请稍后重试或重新应用JSON。')
+            }
+          } else {
+            await handlePrint()
+          }
+        } else {
+          setError('未配置API，且输入不是有效JSON。请接入API或使用默认Prompt在大模型中生成JSON后粘贴。')
+        }
+      }
+    } catch (err) {
+      setError(err.message || '处理失败，请重试')
+    } finally {
+      setProcessingPdf(false)
+    }
+  }
+
   const downloadJSON = () => {
-    if (!result) return;
-    
-    const dataStr = JSON.stringify(result, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `resume_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+    if (!resumeData) return
+    const dataStr = JSON.stringify(resumeData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `resume_${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handlePrint = async () => {
+    try {
+      const el = document.getElementById('resume-preview')
+      if (!el) {
+        window.print()
+        return
+      }
+      const html2canvas = (await import('html2canvas')).default
+      const { jsPDF } = await import('jspdf')
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ unit: 'px', format: [canvas.width, canvas.height], compress: true })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      pdf.save(`resume_${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (e) {
+      try { window.print() } catch {}
+    }
+  }
 
   const loadDemoData = () => {
     const demoResume = `张三
@@ -165,204 +471,206 @@ export default function Home() {
     setError(null);
   };
 
+  // 实时保存：输入内容变化时写入 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('resume-text', resumeText)
+    } catch {}
+  }, [resumeText])
+
+  // 实时保存：解析结果变化时写入 localStorage
+  useEffect(() => {
+    try {
+      if (resumeData) {
+        localStorage.setItem('resume-data', JSON.stringify(resumeData))
+      } else {
+        localStorage.removeItem('resume-data')
+      }
+    } catch {}
+  }, [resumeData])
+
+  // JSON 文本编辑：根据模式（实时/手动）同步到简历预览
+  const handleJsonEdit = (text) => {
+    setJsonText(text)
+    if (autoSyncJson) {
+      try {
+        const parsed = JSON.parse(text)
+        setResumeData(ensureDefaultLayout(parsed))
+        setError(null)
+      } catch (e) {
+        // 保留上次有效的 resumeData，不覆盖
+      }
+    }
+  }
+
+  // 手动应用 JSON 更改
+  const applyJsonChanges = () => {
+    try {
+      const parsed = JSON.parse(jsonText)
+      setResumeData(ensureDefaultLayout(parsed))
+      setError(null)
+    } catch (e) {
+      setError('JSON格式错误，请修正后再点击“应用更改”')
+    }
+  }
+
+  // 区域拖拽：跨列和列内排序
+  const handleMoveSection = ({ sectionKey, toColumn, toIndex }) => {
+    if (!sectionKey || !toColumn) return
+    setResumeData(prev => {
+      const data = ensureDefaultLayout({ ...prev })
+      const cols = data.metadata.layout.columns
+      let left = Array.isArray(cols.left) ? [...cols.left] : []
+      let right = Array.isArray(cols.right) ? [...cols.right] : []
+      left = left.filter(k => k !== sectionKey)
+      right = right.filter(k => k !== sectionKey)
+      const target = toColumn === 'left' ? left : right
+      const insertIndex = Math.max(0, Math.min(
+        typeof toIndex === 'number' ? toIndex : target.length,
+        target.length
+      ))
+      target.splice(insertIndex, 0, sectionKey)
+      const next = {
+        ...data,
+        metadata: {
+          ...data.metadata,
+          layout: {
+            ...data.metadata.layout,
+            columns: {
+              left,
+              right
+            }
+          }
+        }
+      }
+      try { localStorage.setItem('resume-data', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // 列表项拖拽重排：工作经历、教育、项目、获奖、语言（顶层）
+  const handleReorderItem = ({ sectionKey, fromIndex, toIndex }) => {
+    if (typeof fromIndex !== 'number' || typeof toIndex !== 'number') return
+    setResumeData(prev => {
+      const data = { ...prev }
+      let arrRefKey = null
+      if (sectionKey === 'workExperience') {
+        if (Array.isArray(data.workExperience)) arrRefKey = 'workExperience'
+        else arrRefKey = 'experience'
+      } else if (sectionKey === 'education') {
+        arrRefKey = 'education'
+      } else if (sectionKey === 'projects') {
+        arrRefKey = 'projects'
+      } else if (sectionKey === 'awards') {
+        arrRefKey = Array.isArray(data.awards) ? 'awards' : 'certifications'
+      } else if (sectionKey === 'languages') {
+        arrRefKey = 'languages'
+      }
+      if (!arrRefKey) return prev
+      const arr = Array.isArray(data[arrRefKey]) ? [...data[arrRefKey]] : []
+      if (!arr.length) return prev
+      const from = Math.max(0, Math.min(fromIndex, arr.length - 1))
+      const to = Math.max(0, Math.min(toIndex, arr.length - 1))
+      const [moved] = arr.splice(from, 1)
+      arr.splice(to, 0, moved)
+      const next = { ...data, [arrRefKey]: arr }
+      try { localStorage.setItem('resume-data', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // 保存编辑中的 JSON 文本到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('resume-json-text', jsonText || '')
+    } catch {}
+  }, [jsonText])
+
+  // 计算一键生成 PDF 的可用性：
+  // - 有 API：必须已有预览（resumeData）
+  // - 无 API：输入为有效 JSON 或已有预览
+  const canGeneratePDF = (apiKey && apiKey.trim())
+    ? !!resumeData
+    : (() => { try { const o = JSON.parse(resumeText); return !!o && typeof o === 'object' } catch { return !!resumeData } })()
+  
+  // 结果区组件化（高度测量逻辑移入 ResumeWorkspace）
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="mx-auto px-4 py-8 w-full">
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div></div>
+          <div className="flex justify-end mb-4">
             <ThemeToggle />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            简历文本转JSON工具
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            将简历文本内容智能转换为结构化的JSON数据，支持OpenAI和DeepSeek双引擎
-          </p>
+          <Header />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 配置面板 */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              配置设置
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="provider">AI 提供商</Label>
-                <Select value={apiProvider} onValueChange={handleProviderChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择AI提供商" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                    <SelectItem value="deepseek">DeepSeek</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Main Content */}
+        <div className="space-y-6">
+          {/* Configuration and Input Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ConfigPanel
+              apiProvider={apiProvider}
+              handleProviderChange={handleProviderChange}
+              apiKey={apiKey}
+              handleApiKeyChange={handleApiKeyChange}
+              showApiKey={showApiKey}
+              setShowApiKey={setShowApiKey}
+              defaultPrompt={DEFAULT_PROMPT}
+            />
+            <InputPanel
+              resumeText={resumeText}
+              setResumeText={setResumeText}
+              processingParse={processingParse}
+              processingPdf={processingPdf}
+              loadDemoData={loadDemoData}
+              handleProcess={handleProcess}
+              handleProcessToPDF={handleProcessToPDF}
+              canProcess={!!resumeText}
+              canGeneratePDF={canGeneratePDF}
+            />
+          </div>
 
-              <div>
-                <Label htmlFor="apiKey">
-                  {apiProvider === 'openai' ? 'OpenAI API 密钥' : 'DeepSeek API 密钥'}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="apiKey"
-                    type={showApiKey ? "text" : "password"}
-                    value={apiKey}
-                    onChange={handleApiKeyChange}
-                    placeholder={`输入您的 ${apiProvider === 'openai' ? 'OpenAI' : 'DeepSeek'} API 密钥`}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  获取API密钥：
-                  <a 
-                    href={apiProvider === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://platform.deepseek.com/api_keys'} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline ml-1"
-                  >
-                    {apiProvider === 'openai' ? 'OpenAI 控制台' : 'DeepSeek 控制台'}
-                  </a>
-                </p>
-              </div>
-            </div>
-          </Card>
+          {/* Error Display */}
+          <ErrorAlert error={error} />
 
-          {/* 输入面板 */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              简历文本输入
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="resumeText">简历内容</Label>
-                <Textarea
-                  id="resumeText"
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="请粘贴简历文本内容..."
-                  className="h-[200px] max-h-[300px] resize-none overflow-y-auto"
-                />
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  onClick={loadDemoData}
-                  variant="outline"
-                  className="flex-1 sm:flex-none"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  加载演示数据
-                </Button>
-                
-                <Button
-                  onClick={handleProcess}
-                  disabled={!apiKey || !resumeText || processing}
-                  className="flex-1"
-                >
-                  {processing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      处理中...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-4 w-4 mr-2" />
-                      开始解析
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {error && (
-            <Alert variant="destructive" className="lg:col-span-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
-            </Alert>
+          {/* Results Section */}
+          {(resumeData || jsonText) && (
+            <ResumeWorkspace
+              resumeData={resumeData}
+              jsonText={jsonText}
+              onJsonChange={handleJsonEdit}
+              onDownloadJSON={downloadJSON}
+              onPrint={handlePrint}
+              isEditingModules={isEditingModules}
+              onEditingChange={setIsEditingModules}
+              onEditMeta={handleInjectModuleMeta}
+              onResetStyles={resetModuleStylesOnly}
+            />
           )}
+
+          {/* 使用说明已移至顶部并简化 */}
         </div>
 
-        {/* 结果区域 */}
-        {result && (
-          <Card className="p-6 mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="default" className="bg-green-500">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  解析完成
-                </Badge>
-              </div>
-              <Button
-                onClick={downloadJSON}
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                下载JSON文件
-              </Button>
-            </div>
-            
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              简历文本解析后的JSON数据预览
-            </p>
-            
-            <Separator className="my-4" />
-            
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-96 overflow-y-auto">
-              <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            </div>
-          </Card>
-        )}
-
-        {/* 功能说明 */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>使用说明</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center">
-                <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <span className="text-blue-600 font-bold">1</span>
-                </div>
-                <h3 className="font-semibold mb-1">输入文本</h3>
-                <p className="text-sm text-gray-600">输入或粘贴简历文本</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <span className="text-blue-600 font-bold">2</span>
-                </div>
-                <h3 className="font-semibold mb-1">自动解析</h3>
-                <p className="text-sm text-gray-600">AI自动提取简历信息</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <span className="text-blue-600 font-bold">3</span>
-                </div>
-                <h3 className="font-semibold mb-1">下载JSON</h3>
-                <p className="text-sm text-gray-600">获取结构化数据文件</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* No API Modal */}
+        <AlertDialog open={showNoApiModal} onOpenChange={(open) => {
+          setShowNoApiModal(open)
+          if (!open) try { localStorage.setItem('dismiss-no-api-modal', '1') } catch {}
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>未配置 API：请用大模型生成 JSON</AlertDialogTitle>
+              <AlertDialogDescription>
+                操作步骤：复制左侧“默认 Prompt”，在你使用的大模型（如 ChatGPT、DeepSeek）中运行得到结构化 JSON；然后将该 JSON 粘贴到左侧“简历文本输入”，点击“开始解析”即可渲染预览。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowNoApiModal(false)}>稍后再说</AlertDialogCancel>
+              <AlertDialogAction onClick={copyDefaultPrompt}>复制默认 Prompt</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

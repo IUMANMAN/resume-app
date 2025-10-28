@@ -86,9 +86,6 @@ async function parseResumeWithChatGPT(text, fileName, fileSize, apiKey) {
 请分析以下简历文本，并将其转换为标准化的JSON格式。请严格按照以下JSON结构返回数据，如果某些信息不存在，请使用空字符串或空数组：
 
 {
-  "fileName": "文件名",
-  "fileSize": 文件大小,
-  "uploadedAt": "上传时间",
   "personalInfo": {
     "name": "姓名",
     "email": "邮箱",
@@ -98,7 +95,7 @@ async function parseResumeWithChatGPT(text, fileName, fileSize, apiKey) {
     "github": "GitHub链接",
     "website": "个人网站"
   },
-  "education": [
+  "education": 
     {
       "institution": "学校名称",
       "degree": "学位",
@@ -106,52 +103,45 @@ async function parseResumeWithChatGPT(text, fileName, fileSize, apiKey) {
       "period": "时间段",
       "gpa": "GPA",
       "location": "地点"
-    }
-  ],
-  "experience": [
+    },
+  "experience": 
     {
       "company": "公司名称",
       "position": "职位",
       "period": "工作时间",
       "location": "工作地点",
       "description": ["工作描述1", "工作描述2"]
-    }
-  ],
-  "skills": [
+    },
+  "skills": 
     {
       "category": "技能分类",
       "items": ["技能1", "技能2"]
-    }
-  ],
-  "projects": [
+    },
+  "projects": 
     {
       "name": "项目名称",
       "description": "项目描述",
       "technologies": ["技术1", "技术2"],
       "period": "项目时间",
       "url": "项目链接"
-    }
-  ],
-  "languages": [
+    },
+  "languages": 
     {
       "language": "语言名称",
       "proficiency": "熟练程度"
-    }
-  ],
-  "certifications": [
+    },
+  "certifications": 
     {
       "name": "证书名称",
       "issuer": "颁发机构",
       "date": "获得时间"
-    }
-  ],
-  "awards": [
+    },
+  "awards": 
     {
       "name": "奖项名称",
       "issuer": "颁发机构",
       "date": "获得时间"
     }
-  ]
 }
 
 请仔细分析以下简历文本，提取所有相关信息：
