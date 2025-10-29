@@ -101,7 +101,7 @@ export function ConfigPanel({
             defaultValue={defaultPrompt}
             ref={promptRef}
             rows={10}
-            className="flex-1 min-h-[220px] sm:min-h-[260px] resize-none overflow-y-auto text-xs scrollbar-modern"
+            className="flex-1 min-h-[180px] sm:min-h-[260px] resize-none overflow-y-auto text-xs scrollbar-modern"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             If you don’t use an API, you can run the prompt above with your preferred LLM tool.

@@ -53,11 +53,17 @@
   * {
     border-color: hsl(var(--border));
   }
-  body {
+  html, body {
     color: hsl(var(--foreground));
     background: hsl(var(--background));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden; /* Prevent horizontal scrolling on small devices */
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: inline-block;
   }
 }
 

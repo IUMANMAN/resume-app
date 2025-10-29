@@ -7,22 +7,22 @@ export async function POST(request) {
 
     if (!resumeText) {
       return NextResponse.json(
-        { error: '请提供简历文本' },
+        { error: 'Please provide resume text.' },
         { status: 400 }
       );
     }
 
-    // 获取API密钥
+    // Get API key
     const apiKeyToUse = apiKey || (provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY);
     
     if (!apiKeyToUse) {
       return NextResponse.json(
-        { error: `请提供${provider === 'openai' ? 'OpenAI' : 'DeepSeek'} API密钥` },
+        { error: `Please provide a ${provider === 'openai' ? 'OpenAI' : 'DeepSeek'} API key.` },
         { status: 400 }
       );
     }
 
-    // 根据提供商选择不同的解析方法
+    // Choose parsing method based on provider
     let parsedData;
     if (provider === 'deepseek') {
       parsedData = await parseResumeWithDeepSeek(apiKeyToUse, resumeText);
@@ -36,12 +36,12 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('解析简历时出错:', error);
+    console.error('Error parsing resume:', error);
     
-    // 处理不同类型的错误
+    // Handle different error types
     if (error.code === 'invalid_api_key') {
       return NextResponse.json(
-        { error: 'API密钥无效，请检查您的API密钥' },
+        { error: 'Invalid API key. Please check your API key.' },
         { status: 401 }
       );
     }
@@ -49,8 +49,8 @@ export async function POST(request) {
     if (error.code === 'insufficient_quota') {
       return NextResponse.json(
         { 
-          error: 'API配额不足，请检查您的账户余额或使用其他API密钥',
-          details: '您可以：1) 检查账户余额 2) 升级付费计划 3) 使用其他有效的API密钥',
+          error: 'API quota is insufficient. Please check your account balance or use another API key.',
+          details: 'You can: 1) check your account balance 2) upgrade to a paid plan 3) use another valid API key',
           fallback: true
         },
         { status: 402 }
@@ -59,19 +59,19 @@ export async function POST(request) {
     
     if (error.code === 'rate_limit_exceeded') {
       return NextResponse.json(
-        { error: 'API调用频率超限，请稍后再试' },
+        { error: 'Rate limit exceeded. Please try again later.' },
         { status: 429 }
       );
     }
 
     return NextResponse.json(
-      { error: '解析简历时发生错误，请重试' },
+      { error: 'An error occurred while parsing the resume. Please try again.' },
       { status: 500 }
     );
   }
 }
 
-// 使用OpenAI解析简历文本
+// Parse resume text with OpenAI
 async function parseResumeWithOpenAI(apiKey, resumeText) {
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -80,7 +80,7 @@ async function parseResumeWithOpenAI(apiKey, resumeText) {
   return await parseResumeWithChatGPT(openai, resumeText, process.env.OPENAI_MODEL || 'gpt-3.5-turbo');
 }
 
-// 使用DeepSeek解析简历文本
+// Parse resume text with DeepSeek (OpenAI-compatible API)
 async function parseResumeWithDeepSeek(apiKey, resumeText) {
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -91,64 +91,64 @@ async function parseResumeWithDeepSeek(apiKey, resumeText) {
 }
 
 async function parseResumeWithChatGPT(openai, resumeText, modelName = 'gpt-3.5-turbo') {
-  const prompt = `请将以下简历文本解析为标准化的JSON格式。请严格按照以下JSON结构返回数据，不要添加任何其他文本或解释：
+  const prompt = `Please parse the following resume text into a standardized JSON format. Strictly follow the JSON schema below and do not add any extra text or explanation:
 
 {
   "personalInfo": {
-    "name": "姓名",
-    "email": "邮箱",
-    "phone": "电话",
-    "address": "地址",
-    "linkedin": "LinkedIn链接",
-    "github": "GitHub链接",
-    "website": "个人网站"
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "linkedin": "LinkedIn",
+    "github": "GitHub",
+    "website": "Website"
   },
-  "summary": "个人简介或职业目标",
+  "summary": "Professional summary or career objective",
   "education": [
     {
-      "institution": "学校名称",
-      "degree": "学位",
-      "major": "专业",
-      "graduationDate": "毕业时间",
-      "gpa": "GPA（如有）"
+      "institution": "Institution",
+      "degree": "Degree",
+      "major": "Major",
+      "graduationDate": "Graduation Date",
+      "gpa": "GPA (if available)"
     }
   ],
   "experience": [
     {
-      "company": "公司名称",
-      "position": "职位",
-      "startDate": "开始时间",
-      "endDate": "结束时间",
-      "description": "工作描述",
-      "achievements": ["成就1", "成就2"]
+      "company": "Company",
+      "position": "Position",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "description": "Job Description",
+      "achievements": ["Achievement 1", "Achievement 2"]
     }
   ],
   "skills": {
-    "technical": ["技术技能"],
-    "languages": ["语言技能"],
-    "soft": ["软技能"]
+    "technical": ["Technical skills"],
+    "languages": ["Languages"],
+    "soft": ["Soft skills"]
   },
   "projects": [
     {
-      "name": "项目名称",
-      "description": "项目描述",
-      "technologies": ["使用技术"],
-      "link": "项目链接（如有）"
+      "name": "Project Name",
+      "description": "Project Description",
+      "technologies": ["Technologies used"],
+      "link": "Project link (if any)"
     }
   ],
   "certifications": [
     {
-      "name": "证书名称",
-      "issuer": "颁发机构",
-      "date": "获得时间"
+      "name": "Certification Name",
+      "issuer": "Issuer",
+      "date": "Date"
     }
   ]
 }
 
-简历文本：
+Resume text:
 ${resumeText}
 
-请只返回JSON数据，不要包含任何其他文本：`;
+Please return ONLY the JSON data with no additional text:`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -156,7 +156,7 @@ ${resumeText}
       messages: [
         {
           role: 'system',
-          content: '你是一个专业的简历解析助手。请将用户提供的简历文本转换为标准化的JSON格式。只返回JSON数据，不要添加任何解释或其他文本。'
+          content: 'You are a professional resume parsing assistant. Convert the user\'s resume text into a standardized JSON format. Return ONLY JSON data without any explanations or extra text.'
         },
         {
           role: 'user',
@@ -169,20 +169,20 @@ ${resumeText}
 
     const responseText = completion.choices[0].message.content.trim();
     
-    // 尝试解析JSON
+    // Try parsing JSON
     let parsedData;
     try {
-      // 移除可能的markdown代码块标记
+      // Remove possible markdown code block markers
       const cleanedResponse = responseText.replace(/```json\n?|\n?```/g, '').trim();
       parsedData = JSON.parse(cleanedResponse);
     } catch (parseError) {
-      console.error('JSON解析错误:', parseError);
-      console.error('原始响应:', responseText);
+      console.error('JSON parse error:', parseError);
+      console.error('Raw response:', responseText);
       
-      // 如果JSON解析失败，返回一个基本的结构
+      // If JSON parsing fails, return a basic structure
       parsedData = {
         personalInfo: {
-          name: "解析失败",
+          name: "Parsing failed",
           email: "",
           phone: "",
           address: "",
@@ -190,7 +190,7 @@ ${resumeText}
           github: "",
           website: ""
         },
-        summary: "ChatGPT响应格式错误，无法解析",
+        summary: "ChatGPT response format error. Unable to parse.",
         education: [],
         experience: [],
         skills: {
@@ -204,7 +204,7 @@ ${resumeText}
       };
     }
 
-    // 添加元数据
+    // Add metadata
     parsedData.metadata = {
       parsedAt: new Date().toISOString(),
       method: 'chatgpt',
@@ -214,7 +214,7 @@ ${resumeText}
     return parsedData;
 
   } catch (error) {
-    console.error('ChatGPT API调用失败:', error);
+    console.error('ChatGPT API call failed:', error);
     throw error;
   }
 }

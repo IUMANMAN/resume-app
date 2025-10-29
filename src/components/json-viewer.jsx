@@ -137,17 +137,12 @@ export function JsonViewer({ data, title = "JSON Data", defaultCollapsedLevel = 
       }
 
       return (
-        <div className="relative overflow-auto bg-gray-50 dark:bg-gray-800 rounded-md">
-          {/* Content wrapper: use max-content so width follows longest line, enabling horizontal scroll */}
+        <div className="relative h-full overflow-y-scroll overflow-x-scroll scrollbar-modern bg-gray-50 dark:bg-gray-800 rounded-md">
+          {/* Scroll content expands to longest line width to enable horizontal scrolling */}
           <div className="relative w-max min-w-full">
-            {/* Invisible placeholder: expands container height to make page scroll naturally */}
+            {/* Highlighted preview layer (non-interactive, sized by content) */}
             <pre
-              aria-hidden
-              className="m-0 font-mono text-sm leading-6 p-4 opacity-0 select-none pointer-events-none whitespace-pre"
-            >{text}</pre>
-            {/* Highlighted preview layer (non-interactive) */}
-            <pre
-              className="absolute inset-0 m-0 font-mono text-sm leading-6 p-4 overflow-visible pointer-events-none"
+              className="m-0 font-mono text-sm leading-6 p-4 whitespace-pre pointer-events-none"
               dangerouslySetInnerHTML={{ __html: (() => {
               // Use Syntax to highlight current text
               const html = (() => {
@@ -172,7 +167,7 @@ export function JsonViewer({ data, title = "JSON Data", defaultCollapsedLevel = 
             <textarea
               value={text}
               onChange={handleChange}
-              className="absolute inset-0 z-10 w-full h-full font-mono text-sm leading-6 p-4 bg-transparent text-transparent caret-blue-600 dark:caret-blue-300 outline-none resize-none overflow-hidden selection:bg-blue-200/40 dark:selection:bg-blue-800/40 whitespace-pre"
+              className="absolute top-0 left-0 right-0 bottom-4 z-10 w-full h-full font-mono text-sm leading-6 p-4 bg-transparent text-transparent caret-blue-600 dark:caret-blue-300 outline-none resize-none overflow-hidden selection:bg-blue-200/40 dark:selection:bg-blue-800/40 whitespace-pre"
               wrap="off"
               data-role="json-scroll"
               spellCheck={false}
@@ -183,7 +178,7 @@ export function JsonViewer({ data, title = "JSON Data", defaultCollapsedLevel = 
       )
     }
     return (
-      <div className="relative h-full overflow-visible bg-gray-50 dark:bg-gray-800 rounded-md p-2" data-role="json-scroll">
+      <div className="relative h-full overflow-y-scroll overflow-x-auto scrollbar-modern bg-gray-50 dark:bg-gray-800 rounded-md p-2" data-role="json-scroll">
         <Syntax json={JSON.stringify(data, null, 2)} />
       </div>
     )
@@ -202,7 +197,7 @@ export function JsonViewer({ data, title = "JSON Data", defaultCollapsedLevel = 
           <Copy className="h-4 w-4 mr-2" /> Copy
         </Button>
       </div>
-      <div className="p-3 max-h-[70vh] overflow-y-auto" data-role="json-scroll">
+      <div className="p-3 max-h-[70vh] overflow-y-auto overflow-x-auto" data-role="json-scroll">
         {collapsible ? (
           <Node name={undefined} value={data} level={0} defaultCollapsedLevel={defaultCollapsedLevel} />
         ) : (

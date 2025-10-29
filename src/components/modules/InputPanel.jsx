@@ -33,7 +33,7 @@ export function InputPanel({
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
             placeholder="Paste raw resume text or a pre-parsed JSON..."
-            className="flex-1 min-h-[240px] sm:min-h-[300px] resize-y overflow-auto scrollbar-modern"
+            className="flex-1 min-h-[200px] sm:min-h-[300px] resize-y overflow-auto scrollbar-modern"
           />
         </div>
 

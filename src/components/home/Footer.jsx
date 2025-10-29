@@ -50,12 +50,12 @@ export function Footer() {
           {/* Project & Contact */}
           <div className="space-y-3">
             <p className="font-semibold text-gray-900 dark:text-gray-100">Project</p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <a
                 href={githubUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap w-full sm:w-auto justify-center"
                 title="GitHub Repository"
               >
                 <Github className="h-4 w-4" />
@@ -65,14 +65,14 @@ export function Footer() {
                 href={issuesUrl} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap" 
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap w-full sm:w-auto justify-center" 
                 title="Issues"
               >
                 <Star className="h-4 w-4" />
                 <span>Issues</span>
               </a>
               <div 
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap" 
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors text-sm whitespace-nowrap w-full sm:w-auto justify-center" 
                 title="Open-source License"
               >
                 <FileText className="h-4 w-4" />
@@ -81,12 +81,12 @@ export function Footer() {
             </div>
             <div className="space-y-1 pt-2">
               <p className="text-gray-700 dark:text-gray-200 font-medium">Contact Info</p>
-              <a href={`mailto:${contactEmail}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[240px] text-sm truncate" title="Email">
+              <a href={`mailto:${contactEmail}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-full sm:w-[200px] text-sm truncate justify-center sm:justify-start" title="Email">
                 <Mail className="h-4 w-4" />
                 <span>{contactEmail}</span>
               </a>
             </div>
-            <p className="flex items-center gap-3">
+            <p className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
               <span className="inline-flex items-center gap-2"><VercelIcon /> Deploy: <span className="font-medium">Vercel</span></span>
               <span className="inline-flex items-center gap-2"><CloudflareIcon /> Domain: <span className="font-medium">Cloudflare</span></span>
             </p>
@@ -95,12 +95,12 @@ export function Footer() {
           {/* Support */}
           <div className="space-y-2">
             <p className="font-semibold text-gray-900 dark:text-gray-100">Buy Me a Coffee</p>
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-row flex-wrap items-center justify-center sm:items-start gap-2 sm:flex-col">
               <a
                 href={stripeDonateUrl}
                 target={stripeDonateUrl !== "#" ? "_blank" : undefined}
                 rel={stripeDonateUrl !== "#" ? "noreferrer" : undefined}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[100px]"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[110px] justify-center"
                 title="Donate via Stripe"
               >
                 <CreditCard className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function Footer() {
               <a
                 href={wechatPayUrl}
                 onClick={(e) => { e.preventDefault(); setQrSrc(wechatPayUrl); }}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[100px]"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[110px] justify-center"
                 title="WeChat Pay QR"
               >
                 <QrCode className="h-4 w-4" />
@@ -118,7 +118,7 @@ export function Footer() {
               <a
                 href={alipayUrl}
                 onClick={(e) => { e.preventDefault(); setQrSrc(alipayUrl); }}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[100px]"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors w-[110px] justify-center"
                 title="Alipay QR"
               >
                 <QrCode className="h-4 w-4" />

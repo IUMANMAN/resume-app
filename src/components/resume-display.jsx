@@ -8,9 +8,9 @@ import Projects from '@/components/modules/Projects'
 import LanguagesModule from '@/components/modules/Languages'
 import Certifications from '@/components/modules/Certifications'
 import Awards from '@/components/modules/Awards'
-import { Button } from '@/components/ui/button'
+ 
 
-export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEditingChange, onResetStyles }) {
+export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEditingChange, onResetStyles, onEditorState }) {
   if (!data) return null
 
   const source = data || {}
@@ -83,6 +83,11 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
       moduleSpacingRem: m.moduleSpacingRem ?? d.moduleSpacingRem,
       iconColor: m.iconColor ?? d.iconColor,
       showIcon: typeof m.showIcon === 'boolean' ? m.showIcon : d.showIcon,
+      // PersonalInfo-specific photo options
+      showPhoto: typeof m.showPhoto === 'boolean' ? m.showPhoto : d.showPhoto,
+      photoUrl: m.photoUrl ?? d.photoUrl,
+      photoPosition: m.photoPosition ?? d.photoPosition,
+      photoSize: m.photoSize ?? d.photoSize,
       // Do not force a default min-height; follow defaults.js
       heightRem: m.heightRem,
     }
@@ -104,6 +109,9 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     awards: { height: 0, ...moduleDefaults('awards') },
     languages: { height: 0, ...moduleDefaults('languages') },
   })
+
+  // Editor: track which module section is expanded (collapsed by default)
+  const [openSectionKey, setOpenSectionKey] = useState(null)
 
   // Flag: changes triggered by user edits that should be emitted (avoid loops from rebuild/auto measurement)
   const emitPendingRef = useRef(false)
@@ -131,6 +139,25 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
     }
     setModulesMeta(meta)
   }
+
+  // Bridge editor state up to workspace so editor can render as a separate column
+  useEffect(() => {
+    try {
+      onEditorState?.({
+        globalMeta,
+        setGlobalMeta,
+        modulesMeta,
+        setModulesMeta,
+        openSectionKey,
+        setOpenSectionKey,
+        updateModuleMeta,
+        emitPendingRef,
+        isEditing,
+        setIsEditing,
+      })
+    } catch {}
+    // We intentionally depend on key editor states to refresh bridge when they change
+  }, [globalMeta, modulesMeta, openSectionKey, isEditing])
 
   // Automatically measure heights and sync to JSON in real time
   const recalcHeightsIfChanged = () => {
@@ -165,6 +192,9 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
       languages: { height: 0, heightLocked: false, ...moduleDefaults('languages') },
     }
     setModulesMeta(rebuild)
+    // Also sync global style editor state from JSON defaults
+    const g = source?.metadata?.global || DEFAULT_GLOBAL_META
+    setGlobalMeta({ ...DEFAULT_GLOBAL_META, ...g })
     // After rebuild, measure heights immediately and write to JSON (without overwriting locked values; initially unlocked)
     recalcHeightsIfChanged()
   }, [data])
@@ -184,12 +214,12 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
 
   return (
     <div
-      className={`relative mx-auto bg-white dark:bg-neutral-900 shadow-none print:shadow-none rounded-xl border border-neutral-200 animate-slide-up overflow-hidden`}
+      className={`relative mx-auto bg-white dark:bg-neutral-900 shadow-none print:shadow-none rounded-xl border border-neutral-200 animate-slide-up overflow-visible`}
       style={{ width: '100%' }}
     >
-      <div className={`p-8 ${isEditing ? 'md:pr-80' : ''}`}>
+      <div className={`p-3 sm:p-8`}>
         {/* Fixed preview width, centered within container */}
-        <div className="mx-auto" style={{ maxWidth: '794px' }}>
+        <div className="mr-auto px-2 sm:px-0 break-words" style={{ width: '794px', boxSizing: 'border-box', paddingRight: '12px', wordBreak: 'break-word', overflowWrap: 'anywhere', hyphens: 'auto', overflowX: 'hidden' }}>
         {/* Full width: Personal Info */}
         {personalInfo && (
           <div
@@ -200,6 +230,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.personalInfo.sectionPadding,
               marginBottom: modulesMeta.personalInfo.moduleSpacingRem,
               lineHeight: modulesMeta.personalInfo.lineHeight,
+              overflow: 'visible',
             }}
           >
             <PersonalInfo data={personalInfo} meta={modulesMeta.personalInfo} />
@@ -216,6 +247,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.summary.sectionPadding,
               marginBottom: modulesMeta.summary.moduleSpacingRem,
               lineHeight: modulesMeta.summary.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <h2
@@ -239,6 +271,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.experience.sectionPadding,
               marginBottom: modulesMeta.experience.moduleSpacingRem,
               lineHeight: modulesMeta.experience.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Experience data={experience} meta={modulesMeta.experience} />
@@ -255,6 +288,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.education.sectionPadding,
               marginBottom: modulesMeta.education.moduleSpacingRem,
               lineHeight: modulesMeta.education.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Education data={education} meta={modulesMeta.education} />
@@ -271,6 +305,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.skills.sectionPadding,
               marginBottom: modulesMeta.skills.moduleSpacingRem,
               lineHeight: modulesMeta.skills.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Skills data={skills} meta={modulesMeta.skills} />
@@ -287,6 +322,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.projects.sectionPadding,
               marginBottom: modulesMeta.projects.moduleSpacingRem,
               lineHeight: modulesMeta.projects.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Projects data={projects} meta={modulesMeta.projects} />
@@ -303,6 +339,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.certifications.sectionPadding,
               marginBottom: modulesMeta.certifications.moduleSpacingRem,
               lineHeight: modulesMeta.certifications.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Certifications data={certifications} meta={modulesMeta.certifications} />
@@ -319,6 +356,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.awards.sectionPadding,
               marginBottom: modulesMeta.awards.moduleSpacingRem,
               lineHeight: modulesMeta.awards.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <Awards data={awards} meta={modulesMeta.awards} />
@@ -335,6 +373,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
               padding: modulesMeta.languages.sectionPadding,
               marginBottom: modulesMeta.languages.moduleSpacingRem,
               lineHeight: modulesMeta.languages.lineHeight,
+              overflow: 'hidden',
             }}
           >
             <LanguagesModule data={languages} meta={modulesMeta.languages} />
@@ -343,306 +382,7 @@ export function ResumeDisplay({ data, onEditMeta, isEditing: isEditingProp, onEd
         </div>
       </div>
 
-      {isEditing && (
-        <div className="absolute top-0 right-0 w-80 h-full border-l bg-white dark:bg-gray-800 p-4 overflow-y-auto">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium">Module Style Editor</div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsEditing(false)
-              }}
-            >
-              Close
-            </Button>
-          </div>
-          <div className="mb-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                // Trigger parent to reset module styles (layout columns unaffected)
-                try { onResetStyles?.() } catch {}
-              }}
-              className="w-full"
-            >
-              Restore Default Styles
-            </Button>
-          </div>
-
-          {/* Global style settings: apply to all modules */}
-          <div className="mb-4 border rounded p-3">
-            <div className="text-xs font-semibold mb-2">Global Styles</div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Title Font Size</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1.25rem" value={globalMeta.titleFontSize}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, titleFontSize: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], titleFontSize: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Title Color</label>
-              <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.titleColor}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, titleColor: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], titleColor: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Title Alignment</label>
-              <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.titleAlign}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, titleAlign: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], titleAlign: v } })
-                    return next
-                  })
-                }}>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Primary Font Size</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1.25rem" value={globalMeta.h1FontSize}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h1FontSize: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h1FontSize: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Primary Color</label>
-              <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.h1FontColor}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h1FontColor: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h1FontColor: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Primary Alignment</label>
-              <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.h1Align}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h1Align: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h1Align: v } })
-                    return next
-                  })
-                }}>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Secondary Font Size</label>
-              <input type="text" className="flex-1 text-xs border rounded px-2 py-1" placeholder="e.g. 1rem" value={globalMeta.h2FontSize}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h2FontSize: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h2FontSize: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Secondary Color</label>
-              <input type="color" className="h-7 w-12 p-0 border" value={globalMeta.h2FontColor}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h2FontColor: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h2FontColor: v } })
-                    return next
-                  })
-                }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs w-24">Secondary Alignment</label>
-              <select className="w-28 text-xs border rounded px-2 py-1" value={globalMeta.h2Align}
-                onChange={(e) => {
-                  const v = e.target.value
-                  emitPendingRef.current = true
-                  setGlobalMeta(prev => ({ ...prev, h2Align: v }))
-                  setModulesMeta(prev => {
-                    const next = { ...prev }
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], h2Align: v } })
-                    return next
-                  })
-                }}>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-              </select>
-            </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs w-24">Line Height</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 1.6" value={globalMeta.lineHeight}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    emitPendingRef.current = true
-                    setGlobalMeta(prev => ({ ...prev, lineHeight: v }))
-                    setModulesMeta(prev => {
-                      const next = { ...prev }
-                      Object.keys(next).forEach(k => { next[k] = { ...next[k], lineHeight: v } })
-                      return next
-                    })
-                  }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs w-24">Section Padding</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 1rem" value={globalMeta.sectionPadding}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    emitPendingRef.current = true
-                    setGlobalMeta(prev => ({ ...prev, sectionPadding: v }))
-                    setModulesMeta(prev => {
-                      const next = { ...prev }
-                      Object.keys(next).forEach(k => { next[k] = { ...next[k], sectionPadding: v } })
-                      return next
-                    })
-                  }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs w-24">Module Spacing</label>
-                <input type="text" className="w-28 text-xs border rounded px-2 py-1" placeholder="e.g. 2rem" value={globalMeta.moduleSpacingRem}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    emitPendingRef.current = true
-                    setGlobalMeta(prev => ({ ...prev, moduleSpacingRem: v }))
-                    setModulesMeta(prev => {
-                      const next = { ...prev }
-                      Object.keys(next).forEach(k => { next[k] = { ...next[k], moduleSpacingRem: v } })
-                      return next
-                    })
-                  }} />
-              </div>
-            </div>
-          </div>
-
-          {Object.entries(modulesMeta).map(([key, meta]) => (
-            <div key={key} className="mb-6">
-              <div className="text-xs font-semibold mb-2">{key}</div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Background</label>
-                  <input type="color" value={meta.bgColor} onChange={(e) => updateModuleMeta(key, { bgColor: e.target.value })} className="h-7 w-12 p-0 border" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Title Color</label>
-                  <input type="color" value={meta.titleColor} onChange={(e) => updateModuleMeta(key, { titleColor: e.target.value })} className="h-7 w-12 p-0 border" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Icon Color</label>
-                  <input type="color" value={meta.iconColor} onChange={(e) => updateModuleMeta(key, { iconColor: e.target.value })} className="h-7 w-12 p-0 border" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Show Icon</label>
-                  <input type="checkbox" checked={!!meta.showIcon} onChange={(e) => updateModuleMeta(key, { showIcon: e.target.checked })} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Title Font Size</label>
-                  <input type="text" value={meta.titleFontSize} onChange={(e) => updateModuleMeta(key, { titleFontSize: e.target.value })} placeholder="e.g. 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Title Alignment</label>
-                  <select value={meta.titleAlign} onChange={(e) => updateModuleMeta(key, { titleAlign: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Primary Font Size</label>
-                  <input type="text" value={meta.h1FontSize} onChange={(e) => updateModuleMeta(key, { h1FontSize: e.target.value })} placeholder="e.g. 1.25rem" className="flex-1 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Primary Color</label>
-                  <input type="color" value={meta.h1FontColor} onChange={(e) => updateModuleMeta(key, { h1FontColor: e.target.value })} className="h-7 w-12 p-0 border" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Primary Alignment</label>
-                  <select value={meta.h1Align} onChange={(e) => updateModuleMeta(key, { h1Align: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Secondary Font Size</label>
-                  <input type="text" value={meta.h2FontSize} onChange={(e) => updateModuleMeta(key, { h2FontSize: e.target.value })} placeholder="e.g. 1rem" className="flex-1 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Secondary Color</label>
-                  <input type="color" value={meta.h2FontColor} onChange={(e) => updateModuleMeta(key, { h2FontColor: e.target.value })} className="h-7 w-12 p-0 border" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Secondary Alignment</label>
-                  <select value={meta.h2Align} onChange={(e) => updateModuleMeta(key, { h2Align: e.target.value })} className="w-28 text-xs border rounded px-2 py-1">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Line Height</label>
-                  <input type="text" value={meta.lineHeight} onChange={(e) => updateModuleMeta(key, { lineHeight: e.target.value })} placeholder="e.g. 1.6" className="w-28 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Section Padding</label>
-                  <input type="text" value={meta.sectionPadding} onChange={(e) => updateModuleMeta(key, { sectionPadding: e.target.value })} placeholder="e.g. 1rem" className="w-28 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Module Spacing</label>
-                  <input type="text" value={meta.moduleSpacingRem} onChange={(e) => updateModuleMeta(key, { moduleSpacingRem: e.target.value })} placeholder="e.g. 2rem" className="w-28 text-xs border rounded px-2 py-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs w-20">Min Height (rem)</label>
-                  <input
-                    type="text"
-                    value={meta.heightRem || ''}
-                    onChange={(e) => updateModuleMeta(key, { heightRem: e.target.value, heightLocked: true })}
-                    placeholder="e.g. 12rem"
-                    className="w-28 text-xs border rounded px-2 py-1"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Editor moved to workspace-level; no inline overlay here */}
     </div>
   )
 }
